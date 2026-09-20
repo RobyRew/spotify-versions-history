@@ -1,0 +1,5 @@
+node_modules/
+.astro/
+dist/
+__pycache__/
+.DS_Store
