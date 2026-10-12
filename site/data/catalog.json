@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-12T07:07:42.073Z",
+  "updatedAt": "2026-10-12T18:38:09.919Z",
   "testedVersion": "1.2.93.667.g7b5cc0ce",
   "upstream": [
     "https://raw.githubusercontent.com/LoaderSpot/table/main/table/versions.json",
@@ -147,6 +147,24 @@
       "sources": [
         {
           "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.4.258.gc60b10b0946a-arm64.tbz",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
+    {
+      "id": "1.3.4.258.gc60b10b0946a-linux-x64",
+      "version": "1.3.4.258",
+      "fullVersion": "1.3.4.258.gc60b10b0946a",
+      "platform": "linux",
+      "architecture": "x64",
+      "format": "deb",
+      "date": "2026-10-12",
+      "size": 179241028,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-client_1.3.4.258.gc60b10b0946a_amd64.deb",
           "kind": "mirror",
           "label": "LoadSpot mirror"
         }
