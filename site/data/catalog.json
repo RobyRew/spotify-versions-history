@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-06T18:24:36.851Z",
+  "updatedAt": "2026-11-09T12:27:41.883Z",
   "testedVersion": "1.2.93.667.g7b5cc0ce",
   "upstream": [
     "https://raw.githubusercontent.com/LoaderSpot/table/main/table/versions.json",
@@ -815,6 +815,11 @@
           "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-client_1.3.4.258.gc60b10b0946a_amd64.deb",
           "kind": "mirror",
           "label": "LoadSpot mirror"
+        },
+        {
+          "url": "https://repository.spotify.com/pool/non-free/s/spotify-client/spotify-client_1.3.4.258.gc60b10b0946a_amd64.deb",
+          "kind": "official",
+          "label": "Spotify repository"
         }
       ]
     },
