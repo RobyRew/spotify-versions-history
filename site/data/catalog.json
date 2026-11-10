@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-09T12:27:41.883Z",
+  "updatedAt": "2026-11-10T00:39:14.938Z",
   "testedVersion": "1.2.93.667.g7b5cc0ce",
   "upstream": [
     "https://raw.githubusercontent.com/LoaderSpot/table/main/table/versions.json",
@@ -8,6 +8,78 @@
     "https://repository.spotify.com/dists/stable/non-free/binary-amd64/Packages"
   ],
   "entries": [
+    {
+      "id": "1.3.9.2053.g17b31fe42185-windows-x64",
+      "version": "1.3.9.2053",
+      "fullVersion": "1.3.9.2053.g17b31fe42185",
+      "platform": "windows",
+      "architecture": "x64",
+      "format": "exe",
+      "date": "2026-11-09",
+      "size": 161367272,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.9.2053.g17b31fe42185-x64.exe",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
+    {
+      "id": "1.3.9.2053.g17b31fe42185-windows-arm64",
+      "version": "1.3.9.2053",
+      "fullVersion": "1.3.9.2053.g17b31fe42185",
+      "platform": "windows",
+      "architecture": "arm64",
+      "format": "exe",
+      "date": "2026-11-09",
+      "size": 146087336,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.9.2053.g17b31fe42185-arm64.exe",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
+    {
+      "id": "1.3.9.2053.g17b31fe42185-macos-x64",
+      "version": "1.3.9.2053",
+      "fullVersion": "1.3.9.2053.g17b31fe42185",
+      "platform": "macos",
+      "architecture": "x64",
+      "format": "tbz",
+      "date": "2026-11-09",
+      "size": 193911052,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.9.2053.g17b31fe42185-x86_64.tbz",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
+    {
+      "id": "1.3.9.2053.g17b31fe42185-macos-arm64",
+      "version": "1.3.9.2053",
+      "fullVersion": "1.3.9.2053.g17b31fe42185",
+      "platform": "macos",
+      "architecture": "arm64",
+      "format": "tbz",
+      "date": "2026-11-09",
+      "size": 175702694,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.9.2053.g17b31fe42185-arm64.tbz",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
     {
       "id": "1.3.9.2039.g3a97fc2b6cce-windows-x64",
       "version": "1.3.9.2039",
@@ -147,6 +219,24 @@
       "sources": [
         {
           "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.8.620.g39b276d5d7ac-arm64.tbz",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
+    {
+      "id": "1.3.8.620.g39b276d5d7ac-linux-x64",
+      "version": "1.3.8.620",
+      "fullVersion": "1.3.8.620.g39b276d5d7ac",
+      "platform": "linux",
+      "architecture": "x64",
+      "format": "deb",
+      "date": "2026-11-09",
+      "size": 181674710,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-client_1.3.8.620.g39b276d5d7ac_amd64.deb",
           "kind": "mirror",
           "label": "LoadSpot mirror"
         }
