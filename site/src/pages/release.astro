@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+const base = import.meta.env.BASE_URL;
+---
+<Base title="Release" description="One Spotify build, its download origins, and the comments on it." page="release">
+  <article class="release" id="release" data-api={`${base}api/v1/catalog.json`} data-base={base}>
+    <p class="eyebrow">Release</p>
+    <h1 id="release-title">Loading</h1>
+    <p id="release-meta" class="lead"></p>
+    <div id="release-origins" class="pills"></div>
+    <p><a id="release-download" class="rw-btn rw-btn--primary" hidden>Download</a></p>
+    <p id="release-link" class="notice"></p>
+    <div class="reactions" id="release-reactions"></div>
+    <section>
+      <h2>Comments</h2>
+      <div id="release-comments"></div>
+      <form id="release-form" class="composer" hidden>
+        <label>Comment<textarea class="rw-field" name="body" maxlength="2000" required></textarea></label>
+        <button class="rw-btn rw-btn--primary" type="submit">Post</button>
+        <p id="release-form-error" class="notice" hidden></p>
+      </form>
+      <p id="release-signin" class="notice" hidden><a href="https://spotify-versions-history.robyrew.com/api/auth/sign-in">Sign in</a> to comment.</p>
+    </section>
+  </article>
+  <script src="../lib/release.mjs"></script>
+</Base>

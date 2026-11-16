@@ -1,0 +1,64 @@
+---
+import GlassBar from '@robyrew/ui/components/GlassBar.astro';
+import { themeBootstrap } from '@robyrew/web-config/theme-bootstrap';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  page?: 'library' | 'probes' | 'api' | 'release';
+}
+const { title, description, page = 'library' } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const href = (path: string) => `${base}${path}`;
+const signIn = `https://spotify-versions-history.robyrew.com/api/auth/sign-in?returnTo=${encodeURIComponent('/')}`;
+---
+
+<!doctype html>
+<html lang="en" class="theme-loading">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#08090d" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#e8eaf0" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
+    <script is:inline set:html={themeBootstrap} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-head">
+      <GlassBar
+        brandHref={base}
+        labels={{ nav: 'Main navigation', home: 'Spotify versions, home' }}
+        links={[
+          { label: 'Library', href: href(''), current: page === 'library' },
+          { label: 'Probes', href: href('probes/'), current: page === 'probes' },
+          { label: 'API', href: href('api/'), current: page === 'api' },
+        ]}
+        action={{ label: 'Sign in', href: signIn }}
+      >
+        <span slot="brand" class="brand-name">Versions <small>Spotify</small></span>
+        <div slot="end" class="rw-seg theme-switch" role="radiogroup" aria-label="Theme" data-rw-seg="select">
+          <span class="rw-seg__thumb" aria-hidden="true"></span>
+          <button type="button" class="rw-seg__item" role="radio" data-rw-theme-set="system" data-value="system">Auto</button>
+          <button type="button" class="rw-seg__item" role="radio" data-rw-theme-set="light" data-value="light">Light</button>
+          <button type="button" class="rw-seg__item" role="radio" data-rw-theme-set="dark" data-value="dark">Dark</button>
+        </div>
+      </GlassBar>
+    </header>
+    <main id="main" class="site-main">
+      <slot />
+    </main>
+    <footer class="site-foot">
+      <p>Not affiliated with Spotify. Official installers only.</p>
+      <a href="https://github.com/RobyRew/spotify-versions-history">Source</a>
+    </footer>
+    <script>
+      import { initSegments, initThemeControls } from '@robyrew/ui/behaviors.js';
+      initThemeControls();
+      initSegments();
+    </script>
+  </body>
+</html>

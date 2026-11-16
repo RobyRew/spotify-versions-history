@@ -3,3 +3,7 @@ node_modules/
 dist/
 __pycache__/
 .DS_Store
+site/var/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

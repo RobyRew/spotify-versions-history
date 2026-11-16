@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { LIVE_CATALOG, LEGACY_CATALOG, LINUX_PACKAGES, TESTED_VERSION, normalizeCatalog, parseLinuxPackages, mergeCatalogs } from '../src/lib/catalog.mjs';
+import { LIVE_CATALOG, LEGACY_CATALOG, LINUX_INDEXES, TESTED_VERSION, normalizeCatalog, loadLinuxIndexes, mergeCatalogs } from '../src/lib/catalog.mjs';
 
 const target = new URL('../data/catalog.json', import.meta.url);
 async function fetchText(url) {
@@ -12,7 +12,7 @@ async function fetchText(url) {
 const [live, legacy, linux] = await Promise.all([
   fetchText(LIVE_CATALOG).then(JSON.parse).then(normalizeCatalog),
   fetchText(LEGACY_CATALOG).then(JSON.parse).then(normalizeCatalog),
-  fetchText(LINUX_PACKAGES).then(parseLinuxPackages),
+  loadLinuxIndexes(fetchText),
 ]);
 // A schema change or outage must never publish an empty or truncated catalog.
 if (live.length < 200 || legacy.length < 200 || linux.length === 0 || !live.some(entry => entry.tested))
@@ -24,7 +24,7 @@ if (JSON.stringify(previous?.entries) === JSON.stringify(entries)) {
   console.log(`Catalog unchanged (${entries.length} installers); no deployment needed.`);
 } else {
   const catalog = { schemaVersion: 1, updatedAt: new Date().toISOString(), testedVersion: TESTED_VERSION,
-    upstream: [LIVE_CATALOG, LEGACY_CATALOG, LINUX_PACKAGES], entries };
+    upstream: [LIVE_CATALOG, LEGACY_CATALOG, ...LINUX_INDEXES.map(index => index.url)], entries };
   await writeFile(target, JSON.stringify(catalog, null, 2) + '\n');
   console.log(`Updated catalog: ${entries.length} installers, ${new Set(entries.map(entry => entry.version)).size} versions.`);
 }

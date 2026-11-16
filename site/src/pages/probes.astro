@@ -1,0 +1,34 @@
+---
+import official from '../../data/official.json';
+import mobile from '../../data/mobile.json';
+import Base from '../layouts/Base.astro';
+const watched = Object.entries(official.watched ?? {});
+const offers = Object.entries(official.updateService?.offers ?? {});
+---
+<Base title="Probes" description="What the version sensors last saw on Spotify, Apple and the Microsoft Store." page="probes">
+  <article class="prose">
+    <p class="eyebrow">Sensors</p>
+    <h1>Last readings</h1>
+    <p class="lead">A row here is the last HEAD or the last update-service answer. A stable ETag on Windows x86 is the expected reading: Spotify stopped shipping that installer.</p>
+    <h2>Permanent URLs</h2>
+    <ul class="route-list">
+      {watched.map(([id, row]) => <li><code>{id}</code> checked {row.checkedAt?.slice(0, 16) ?? '—'} · ETag changed {row.changedAt?.slice(0, 10) ?? '—'} · <code>{row.etag ?? 'no etag'}</code></li>)}
+    </ul>
+    <h2>Desktop update service</h2>
+    <p>Claim {official.updateService?.claim ?? '—'} · checked {official.updateService?.checkedAt?.slice(0, 16) ?? 'not run'}.</p>
+    <ul class="route-list">
+      {offers.map(([platform, offer]) => <li><code>{platform}</code> {offer.upToDate ? 'up to date for that claim' : offer.fullVersion} {offer.signedUntil ? `· signed until ${offer.signedUntil.slice(0, 10)}` : ''}</li>)}
+      {offers.length === 0 && <li>No stored session has reported yet. The permanent-URL sensor still runs.</li>}
+    </ul>
+    <h2>iOS and iPadOS</h2>
+    {mobile.ios
+      ? <p>App Store <strong>{mobile.ios.version}</strong> · {mobile.ios.releaseDate?.slice(0, 10)} · <a href={mobile.ios.listing}>listing</a>. Same bundle for iPhone and iPad. No IPA is stored.</p>
+      : <p>The iTunes lookup has not been recorded yet.</p>}
+    <h2>Microsoft Store</h2>
+    {mobile.windowsStore
+      ? <p>{mobile.windowsStore.title} · product <code>{mobile.windowsStore.productId}</code> · version {mobile.windowsStore.version ?? 'not in the public payload'} · last update {mobile.windowsStore.lastUpdate?.slice(0, 10) ?? '—'} · <a href={mobile.windowsStore.listing}>listing</a></p>
+      : <p>The Store product lookup has not been recorded yet.</p>}
+    <h2>Android</h2>
+    <p>{mobile.android?.detail}</p>
+  </article>
+</Base>

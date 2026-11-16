@@ -19,6 +19,13 @@ import { pipeline } from 'node:stream/promises';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
+const APP_PLATFORMS = {
+  Win32_x86_64: ['windows', 'x64'],
+  Win32_ARM64: ['windows', 'arm64'],
+  OSX: ['macos', 'x64'],
+  OSX_ARM64: ['macos', 'arm64'],
+};
+
 export const WATCHED = [
   { id: 'windows-x64', url: 'https://download.scdn.co/SpotifyFullSetupX64.exe', platform: 'windows', architecture: 'x64', machine: 0x8664 },
   { id: 'windows-arm64', url: 'https://download.scdn.co/SpotifyFullSetupARM64.exe', platform: 'windows', architecture: 'arm64', machine: 0xAA64 },
@@ -98,6 +105,35 @@ export async function capture(target, { url = target.url, etag = null, size = nu
   return { path: named, sha256: sha256.digest('hex'), sha1: sha1.digest('hex'), size: bytes, lastModified: head.lastModified, etag: head.etag, fullVersion: productVersion, name };
 }
 
+/** Version embedded in spotify_installer-<version>-<n>.exe or spotify-autoupdate-<version>-<n>.tbz. */
+export function versionFromInstallerName(pathname) {
+  let path = pathname;
+  try { path = new URL(pathname).pathname; } catch { /* a bare filename has no host */ }
+  const name = path.split('/').pop() ?? '';
+  const match = /^(?:spotify_installer|spotify-autoupdate)-(1\.\d+\.\d+\.\d+\.g[0-9a-fA-F]+)-\d+\.(?:exe|tbz)$/.exec(name);
+  return match ? match[1] : null;
+}
+
+/**
+ * Downloads a non-PE archive (the macOS tbz the update service returns). Identity is the filename,
+ * which the update service builds, checked against the version the protobuf offered.
+ */
+export async function captureByName(url, { expectVersion, name }, directory, fetchImpl = fetch) {
+  const namedVersion = versionFromInstallerName(url);
+  if (!namedVersion || namedVersion.toLowerCase() !== expectVersion.toLowerCase())
+    throw new Error(`${url}: name is ${namedVersion}, not ${expectVersion}`);
+  const path = join(directory, 'capture.bin');
+  const response = await fetchImpl(url, { redirect: 'error', signal: AbortSignal.timeout(15 * 60_000) });
+  if (response.status !== 200 || !response.body) { await response.body?.cancel(); throw new Error(`${url}: HTTP ${response.status} during download`); }
+  const head = headers(response);
+  const sha256 = createHash('sha256'), sha1 = createHash('sha1');
+  let bytes = 0;
+  await pipeline(Readable.fromWeb(response.body), async function* (source) { for await (const chunk of source) { sha256.update(chunk); sha1.update(chunk); bytes += chunk.length; yield chunk; } }, createWriteStream(path));
+  const named = join(directory, name);
+  await rename(path, named);
+  return { path: named, sha256: sha256.digest('hex'), sha1: sha1.digest('hex'), size: bytes, lastModified: head.lastModified, etag: head.etag, fullVersion: expectVersion, name };
+}
+
 /** Attaches a captured file to the rolling release. Returns the asset URL, or null when archiving is off. */
 export function archive(file, tag, repository, { run = spawnSync } = {}) {
   if (!tag) return null;
@@ -149,16 +185,24 @@ export function canonical(state) {
 }
 
 /**
- * Pure part of the second sensor. For each Windows offer, the matching build (same version and
+ * Pure part of the second sensor. Each offer is stored. A matching build (same version and
  * architecture) gets Spotify's http_prefix and binary_hash; the record is verified when that hash
  * equals the downloaded file's SHA-256 or SHA-1, and a conflict otherwise. Offers for builds not
  * captured yet are returned so the caller can download them from the signed link while it lasts.
+ * An "up to date" answer (Intel macOS does this for an old claim) is stored as a reading.
  */
 export function reconcileUpdateService(state, probe, checkedAt) {
   const offers = { ...(state.updateService?.offers ?? {}) };
   const missing = [];
   for (const [platform, result] of Object.entries(probe?.results ?? {})) {
-    if (!result?.fullVersion || !result.httpPrefix) continue;
+    if (!result?.fullVersion || !result.httpPrefix) {
+      if (result?.upToDate) {
+        const mapped = APP_PLATFORMS[platform];
+        const previous = offers[platform];
+        offers[platform] = { upToDate: true, ...(mapped ? { os: mapped[0], architecture: mapped[1] } : {}), seenAt: previous?.upToDate ? previous.seenAt : checkedAt };
+      }
+      continue;
+    }
     const before = offers[platform];
     const changed = before?.fullVersion !== result.fullVersion || before?.httpPrefix !== result.httpPrefix || before?.binaryHash !== result.binaryHash;
     // poll_interval is jittered per response and left out, so an unchanged offer stays byte-identical.
@@ -166,8 +210,7 @@ export function reconcileUpdateService(state, probe, checkedAt) {
     const signed = signedLink(changed ? null : before, result, checkedAt);
     offers[platform] = { fullVersion: result.fullVersion, os: result.os, architecture: result.architecture, httpPrefix: result.httpPrefix,
       binaryHash: result.binaryHash, targetVersion: result.targetVersion, upgradeType: result.upgradeType, seenAt: changed ? checkedAt : before.seenAt, ...signed };
-    if (result.os !== 'windows') continue;
-    const build = state.builds.find(b => b.platform === 'windows' && b.architecture === result.architecture && b.fullVersion.toLowerCase() === result.fullVersion.toLowerCase());
+    const build = state.builds.find(b => b.platform === result.os && b.architecture === result.architecture && b.fullVersion.toLowerCase() === result.fullVersion.toLowerCase());
     if (!build) { missing.push(result); continue; }
     const hash = (result.binaryHash ?? '').toLowerCase();
     const matches = hash.length > 0 && (hash === build.sha256 || hash === build.sha1);
@@ -188,13 +231,19 @@ export function reconcileUpdateService(state, probe, checkedAt) {
  * SHA-256 CI recorded from Spotify, so an archive copy is always Spotify's file.
  */
 export function archiveCandidates(build, heads, probe) {
-  const watched = build.platform === 'windows' ? WATCHED.find(w => w.platform === 'windows' && w.architecture === build.architecture) : null;
-  if (!watched) return { watched: null, candidates: [] };
+  const watched = WATCHED.find(w => w.platform === build.platform && w.architecture === build.architecture) ?? null;
+  // A macOS row with neither a matching DMG ETag nor an update-service offer has nothing to fetch.
+  if (build.platform !== 'windows' && build.platform !== 'macos') return { watched: null, candidates: [] };
   const candidates = [];
-  if (heads[watched.id]?.etag === build.etag) candidates.push({ url: watched.url, etag: build.etag, size: build.size });
-  const offer = Object.values(probe?.results ?? {}).find(r => r?.os === 'windows' && r.architecture === build.architecture && r.fullVersion?.toLowerCase() === build.fullVersion.toLowerCase());
+  if (watched && heads[watched.id]?.etag === build.etag) candidates.push({ url: watched.url, etag: build.etag, size: build.size });
+  const offer = Object.values(probe?.results ?? {}).find(r => r?.os === build.platform && r.architecture === build.architecture && r.fullVersion?.toLowerCase() === build.fullVersion.toLowerCase());
   if (offer?.url) candidates.push({ url: offer.url, size: build.size });
-  candidates.push({ url: `https://loadspot.amd64fox1.workers.dev/download/spotify_installer-${build.fullVersion}-${build.architecture}.exe`, size: build.size });
+  if (candidates.length === 0 && build.platform === 'macos') return { watched: null, candidates: [] };
+  const suffix = build.platform === 'macos' && build.architecture === 'x64' ? 'x86_64' : build.architecture;
+  const file = build.platform === 'macos'
+    ? `spotify-autoupdate-${build.fullVersion}-${suffix}.tbz`
+    : `spotify_installer-${build.fullVersion}-${build.architecture}.exe`;
+  candidates.push({ url: `https://loadspot.amd64fox1.workers.dev/download/${file}`, size: build.size });
   return { watched, candidates };
 }
 
@@ -263,6 +312,16 @@ async function main() {
     const probe = runProbe();
     if (probe) {
       for (const offer of reconcileUpdateService(next, probe, checkedAt)) {
+        if (offer.os === 'macos') {
+          const suffix = offer.architecture === 'x64' ? 'x86_64' : offer.architecture;
+          const name = `spotify-autoupdate-${offer.fullVersion}-${suffix}.tbz`;
+          try {
+            console.log(`macos-${offer.architecture}: update service offers ${offer.fullVersion}, downloading from ${offer.httpPrefix}`);
+            const file = await captureByName(offer.url, { expectVersion: offer.fullVersion, name }, directory);
+            record({ id: `macos-${offer.architecture}`, platform: 'macos', architecture: offer.architecture }, file, { url: offer.httpPrefix, format: 'tbz', sensors: ['update-service'] });
+          } catch (error) { console.warn(`macos-${offer.architecture}: ${error.message}`); }
+          continue;
+        }
         const watched = WATCHED.find(w => w.platform === 'windows' && w.architecture === offer.architecture);
         if (!watched) continue;
         console.log(`${watched.id}: update service offers ${offer.fullVersion}, downloading from ${offer.httpPrefix}`);

@@ -1,15 +1,30 @@
 {
-  "name": "blockthespot-catalog",
+  "name": "spotify-versions-history",
   "private": true,
   "type": "module",
-  "version": "0.4.6",
-  "engines": { "node": ">=22.12.0" },
+  "version": "0.5.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "astro dev --host 127.0.0.1",
     "build": "astro build",
     "preview": "astro preview --host 127.0.0.1",
-    "test": "node --test ../scripts/test-site.mjs",
-    "catalog:update": "node scripts/update-catalog.mjs"
+    "test": "node --experimental-sqlite --test ../scripts/test-site.mjs",
+    "catalog:update": "node scripts/update-catalog.mjs",
+    "start": "node --experimental-sqlite --import tsx server/main.mjs"
   },
-  "dependencies": { "astro": "7.3.3" }
+  "dependencies": {
+    "@logto/node": "^4.0.1",
+    "@robyrew/astro-logto": "git+https://github.com/RobyRew/astro-logto.git#v0.1.0",
+    "@robyrew/ui": "git+https://github.com/RobyRew/ui.git#v0.4.0",
+    "@robyrew/web-config": "git+https://github.com/RobyRew/web-config.git#v0.4.0",
+    "astro": "7.3.3",
+    "gsap": "^3.15.1",
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "tailwindcss": "^4.3.5"
+  }
 }

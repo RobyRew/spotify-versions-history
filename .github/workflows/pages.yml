@@ -11,6 +11,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  NODE_OPTIONS: --experimental-sqlite
 concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: false
@@ -32,17 +34,19 @@ jobs:
           node-version: '24'
       - name: Refresh version metadata
         run: node site/scripts/update-catalog.mjs
+      - name: Refresh iOS and Store version sensors
+        run: node site/scripts/probe-mobile.mjs
       - name: Validate refreshed catalog
         run: node --test scripts/test-site.mjs
       - name: Commit only a changed catalog
         id: snapshot
         run: |
-          if git diff --quiet -- site/data/catalog.json; then
+          git add site/data/catalog.json site/data/mobile.json
+          if git diff --cached --quiet; then
             echo 'changed=false' >> "$GITHUB_OUTPUT"
           else
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add site/data/catalog.json
             git commit -m 'Update Spotify download catalog'
             git pull --rebase origin main
             git push origin HEAD:main

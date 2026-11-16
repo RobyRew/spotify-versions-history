@@ -1,0 +1,33 @@
+---
+import Base from '../layouts/Base.astro';
+const routes = [
+  ['GET', '/api/v1/catalog.json', 'Full catalog. Same shape GitHub Pages already publishes.'],
+  ['GET', '/api/v1/windows-x64.json', 'Compact Windows x64 feed.'],
+  ['GET', '/api/v1/counts', 'Download, like and comment counts keyed by release id.'],
+  ['GET', '/api/v1/releases/:id', 'Counts, reactions, and whether you liked this release.'],
+  ['GET', '/api/v1/releases/:id/comments', 'Comments on that release.'],
+  ['POST', '/api/v1/releases/:id/comments', 'Body {"body":"…"}. Signed-in. 20 per hour.'],
+  ['DELETE', '/api/v1/releases/:id/comments/:commentId', 'Author, or a Logto role archive-admin.'],
+  ['POST', '/api/v1/releases/:id/like', 'One like per user.'],
+  ['DELETE', '/api/v1/releases/:id/like', 'Remove your like.'],
+  ['POST', '/api/v1/releases/:id/reactions', 'Body {"kind":"works"|"broken"|"needed"}.'],
+  ['DELETE', '/api/v1/releases/:id/reactions/:kind', 'Remove that reaction.'],
+  ['GET', '/r/:version/:platform/:architecture', '302 to the best live file and count the download.'],
+  ['POST', '/api/v1/ingest', 'Watcher only. Bearer token. Body {"health":[{"url","status"}]}.'],
+  ['GET', '/api/v1/me', 'The signed-in username, or {"user":null}.'],
+];
+---
+<Base title="API" description="Read and write API for the Spotify version archive." page="api">
+  <article class="prose">
+    <p class="eyebrow">HTTP</p>
+    <h1>API</h1>
+    <p class="lead">Reads are public. Comments, likes and reactions need the Logto session cookie. POST bodies are <code>application/json</code>.</p>
+    <ul class="route-list">
+      {routes.map(([method, path, text]) => <li><code>{method} {path}</code><br />{text}</li>)}
+    </ul>
+    <pre><code>{`curl -s https://spotify-versions-history.robyrew.com/api/v1/catalog.json
+curl -s -X POST https://spotify-versions-history.robyrew.com/api/v1/releases/1.2.93.667.g7b5cc0ce-windows-x64/comments \\
+  -H 'content-type: application/json' --cookie 'sv_sid=…' \\
+  -d '{"body":"This build installs."}'`}</code></pre>
+  </article>
+</Base>

@@ -5,13 +5,17 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { TESTED_VERSION, normalizeCatalog, sourceFor, mergeCatalogs, parseLinuxPackages, filterCatalog, selectSource, windowsFeed, compareVersions, applyOfficial, isExpired, sourceNote } from '../site/src/lib/catalog.mjs';
-import { WATCHED, inspectPortableExecutable, capture, applyObservations, reconcileUpdateService, runProbe, archive, ensureRelease, serialize, canonical, archiveCandidates, archiveAlive } from '../site/scripts/watch-official.mjs';
+import { TESTED_VERSION, ARCHIVE_HOST, normalizeCatalog, sourceFor, mergeCatalogs, parseLinuxPackages, loadLinuxIndexes, filterCatalog, selectSource, windowsFeed, compareVersions, applyOfficial, isExpired, sourceNote, needsOwnMirror, isReleaseId, originPills } from '../site/src/lib/catalog.mjs';
+import { parseItunesLookup, parseStoreProduct } from '../site/src/lib/mobile.mjs';
+import { WATCHED, inspectPortableExecutable, capture, captureByName, versionFromInstallerName, applyObservations, reconcileUpdateService, runProbe, archive, ensureRelease, serialize, canonical, archiveCandidates, archiveAlive } from '../site/scripts/watch-official.mjs';
 const catalog = JSON.parse(await readFile(new URL('../site/data/catalog.json', import.meta.url), 'utf8'));
 const official = JSON.parse(await readFile(new URL('../site/data/official.json', import.meta.url), 'utf8'));
 const fixture = JSON.parse(await readFile(new URL('../testdata/loadspot_versions.json', import.meta.url), 'utf8'));
 const entries = normalizeCatalog(fixture);
-const html = await readFile(new URL('../site/src/pages/index.astro', import.meta.url), 'utf8');
+const html = [
+  await readFile(new URL('../site/src/pages/index.astro', import.meta.url), 'utf8'),
+  await readFile(new URL('../site/src/layouts/Base.astro', import.meta.url), 'utf8'),
+].join('\n');
 
 test('Published catalog includes the full library and all supported architectures', () => {
   assert.equal(catalog.schemaVersion, 1);
@@ -123,7 +127,7 @@ test('Official latest links are explicit, the page has no BlockTheSpot branding,
   assert.ok(!/BlockTheSpot(?!-Installer)/.test(html.replace(/https:\/\/[^"'<>\s]+/g, '')), 'no BlockTheSpot branding in the page text');
   assert.ok(!html.includes('Tested for BTS') && !html.includes('BTS tested'));
   assert.ok(html.includes('skip-link'));
-  assert.ok(html.includes('aria-label="Main navigation"'));
+  assert.ok(html.includes('Main navigation'));
   assert.ok(html.includes('aria-live="polite"'));
   assert.ok(html.includes('Official Spotify only'));
   assert.ok(html.includes('Older official CDN links may have expired'));
@@ -210,12 +214,15 @@ test('Update-service offers verify a captured build by hash, flag a conflict, an
     OSX: { upToDate: true },
   } };
   const missing = reconcileUpdateService(state, probe, '2026-09-18T05:00:00.000Z');
-  assert.deepEqual(missing, []);
+  assert.equal(missing.length, 1);
+  assert.equal(missing[0].os, 'macos');
+  assert.equal(missing[0].architecture, 'arm64');
   assert.equal(state.builds[0].verified, 'binary_hash', 'a SHA-1 binary_hash verifies against sha1, case-insensitively');
   assert.deepEqual(state.builds[0].sensors, ['permanent-url', 'update-service']);
   assert.match(state.builds[1].conflict, /matches neither/);
   assert.equal(state.updateService.offers.OSX_ARM64.fullVersion, '1.3.1.234.g59d6bf59');
-  assert.equal(state.updateService.offers.OSX, undefined);
+  assert.equal(state.updateService.offers.OSX.upToDate, true);
+  assert.equal(state.updateService.offers.OSX.architecture, 'x64');
   const newer = { claim: '1.2.0.0', results: { Win32_x86_64: { ...probe.results.Win32_x86_64, fullVersion: '1.3.2.100.g11111111' } } };
   const unseen = reconcileUpdateService(state, newer, '2026-09-19T05:00:00.000Z');
   assert.equal(unseen.length, 1);
@@ -352,4 +359,117 @@ test('Built Pages APIs match source data and use the correct repository base pat
   const builtHtml = await readFile(new URL('../site/dist/index.html', import.meta.url), 'utf8');
   assert.ok(builtHtml.includes('data-api="/spotify-versions-history/api/v1/catalog.json"'));
   assert.ok(builtHtml.includes('href="/spotify-versions-history/favicon.svg"'));
+});
+
+test('Own archive host, arm64 debs, and the mirror decision', async () => {
+  const full = TESTED_VERSION;
+  const own = `https://${ARCHIVE_HOST}/sha256/${'ab'.repeat(32)}/spotify_installer-${full}-x64.exe`;
+  assert.equal(sourceFor(own, full, 'windows', 'x64').label, 'Archive');
+  assert.equal(sourceFor(own.replace('/sha256/', '/files/'), full, 'windows', 'x64'), null);
+  const arm = parseLinuxPackages(`Package: spotify-client\nArchitecture: arm64\nVersion: 1:${full}\nFilename: pool/non-free/s/spotify-client/spotify-client_${full}_arm64.deb\nSize: 50\n`);
+  assert.equal(arm.length, 1);
+  assert.equal(arm[0].architecture, 'arm64');
+  assert.equal(arm[0].sources[0].kind, 'official');
+  const indexes = await loadLinuxIndexes(async (url) => {
+    if (!url.includes('binary-amd64')) throw new Error(`${url}: HTTP 404`);
+    return `Package: spotify-client\nArchitecture: amd64\nVersion: 1:${full}\nFilename: pool/non-free/s/spotify-client/spotify-client_${full}_amd64.deb\nSize: 9\n`;
+  });
+  assert.equal(indexes.length, 1);
+  await assert.rejects(() => loadLinuxIndexes(async () => { throw new Error('down'); }));
+  const now = Date.parse('2026-01-01T00:00:00Z');
+  assert.equal(needsOwnMirror({ spotifyLive: true, now }), false);
+  assert.equal(needsOwnMirror({ mirrorUp: true, now }), false);
+  assert.equal(needsOwnMirror({ signedUntil: '2026-01-10T00:00:00Z', now }), false);
+  assert.equal(needsOwnMirror({ signedUntil: '2026-01-02T00:00:00Z', now }), true);
+  assert.equal(isReleaseId(`${full}-windows-x64`), true);
+  assert.equal(isReleaseId(`${full}-windows-store-x64`), true);
+  assert.equal(isReleaseId('../etc'), false);
+  const pills = originPills({ sources: arm[0].sources });
+  assert.equal(pills.spotify.kind, 'official');
+  assert.equal(pills.mirror, null);
+});
+
+test('macOS update packages are named, hashed and refused when the name disagrees', async () => {
+  const version = '1.3.1.234.g59d6bf59';
+  const url = `https://upgrade.scdn.co/upgrade/client/osx-arm64/spotify-autoupdate-${version}-77.tbz?fauth=abc.def-1`;
+  assert.equal(versionFromInstallerName(url), version);
+  assert.equal(versionFromInstallerName('https://upgrade.scdn.co/nope.exe'), null);
+  const body = Buffer.from('tbz-bytes');
+  const directory = await mkdtemp(join(tmpdir(), 'watch-tbz-'));
+  try {
+    const file = await captureByName(url, { expectVersion: version, name: `spotify-autoupdate-${version}-arm64.tbz` }, directory, async () =>
+      new Response(body, { status: 200, headers: { 'content-length': String(body.length), 'last-modified': 'Thu, 17 Sep 2026 15:26:53 GMT' } }));
+    assert.equal(file.sha256, sha('sha256', body));
+    assert.equal(file.fullVersion, version);
+    await assert.rejects(captureByName(url, { expectVersion: '1.3.1.235.g00000000', name: 'x.tbz' }, directory, async () => new Response(body)), /not 1\.3\.1\.235/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('iTunes and the Microsoft Store parsers keep an empty Store version empty', () => {
+  const ios = parseItunesLookup({ results: [{ bundleId: 'com.spotify.client', version: '9.2.0', currentVersionReleaseDate: '2026-11-13T13:54:31Z', trackViewUrl: 'https://apps.apple.com/us/app/spotify/id324684580?uo=4' }] });
+  assert.equal(ios.version, '9.2.0');
+  assert.deepEqual(ios.devices, ['ios', 'ipados']);
+  assert.equal(ios.listing.includes('?'), false);
+  assert.equal(parseItunesLookup({ results: [] }), null);
+  const store = parseStoreProduct({ Payload: { PublisherName: 'Spotify AB', Title: 'Spotify - Music and Podcasts', Version: '', LastUpdateDateUtc: '2026-11-12T08:08:24Z' } });
+  assert.equal(store.version, null);
+  assert.equal(store.lastUpdate, '2026-11-12T08:08:24Z');
+  assert.equal(parseStoreProduct({ Payload: { PublisherName: 'Other' } }), null);
+});
+
+test('Comments, likes, reactions and the counted redirect', async () => {
+  const { openArchive } = await import('../site/src/lib/archive-db.mjs');
+  const { handleApi } = await import('../site/server/handle.mjs');
+  const db = openArchive();
+  const full = TESTED_VERSION;
+  const id = `${full}-windows-x64`;
+  const entry = { id, fullVersion: full, platform: 'windows', architecture: 'x64', sources: [{ url: `https://loadspot.amd64fox1.workers.dev/download/spotify_installer-${full}-x64.exe`, kind: 'mirror', label: 'LoadSpot mirror' }] };
+  const user = { id: 'user-1', username: 'pepito', name: 'Pepito', admin: false };
+  const deps = {
+    db,
+    publicOrigin: 'https://spotify-versions-history.robyrew.com',
+    ingestToken: 'secret-token',
+    user: async (request) => request.headers.get('x-user') === '1' ? user : null,
+    hasRelease: (releaseId) => releaseId === id,
+    entryById: (releaseId) => releaseId === id ? entry : null,
+    findEntry: (version, platform, architecture) => version === full && platform === 'windows' && architecture === 'x64' ? entry : null,
+  };
+  const call = (path, options = {}) => handleApi(new Request(`https://spotify-versions-history.robyrew.com${path}`, options), deps);
+  assert.equal((await call('/api/v1/counts')).status, 200);
+  assert.equal((await call(`/api/v1/releases/${id}/comments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"body":"hi"}' })).status, 401);
+  const posted = await call(`/api/v1/releases/${id}/comments`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-user': '1', origin: 'https://spotify-versions-history.robyrew.com' }, body: '{"body":"This build installs."}' });
+  assert.equal(posted.status, 201);
+  const created = await posted.json();
+  assert.equal(created.username, 'pepito');
+  assert.equal((await call(`/api/v1/releases/${id}/comments/${created.id}`, { method: 'DELETE', headers: { origin: 'https://evil.test', 'x-user': '1' } })).status, 403);
+  assert.equal((await call(`/api/v1/releases/${id}/comments/${created.id}`, { method: 'DELETE' })).status, 401);
+  assert.equal((await call(`/api/v1/releases/${id}/comments/${created.id}`, { method: 'DELETE', headers: { origin: 'https://spotify-versions-history.robyrew.com' } })).status, 401);
+  const stranger = { ...deps, user: async () => ({ id: 'user-2', username: 'other', admin: false }) };
+  assert.equal((await handleApi(new Request(`https://spotify-versions-history.robyrew.com/api/v1/releases/${id}/comments/${created.id}`, { method: 'DELETE', headers: { origin: 'https://spotify-versions-history.robyrew.com' } }), stranger)).status, 404);
+  assert.equal((await call(`/api/v1/releases/${id}/like`, { method: 'POST', headers: { origin: 'https://spotify-versions-history.robyrew.com', 'x-user': '1' } })).status, 200);
+  assert.equal((await call(`/api/v1/releases/${id}/reactions`, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://spotify-versions-history.robyrew.com', 'x-user': '1' }, body: '{"kind":"nope"}' })).status, 400);
+  const reacted = await call(`/api/v1/releases/${id}/reactions`, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://spotify-versions-history.robyrew.com', 'x-user': '1' }, body: '{"kind":"works"}' });
+  assert.equal((await reacted.json()).reactions.works, 1);
+  const redirect = await call(`/r/${full}/windows/x64`);
+  assert.equal(redirect.status, 302);
+  assert.equal(redirect.headers.get('location'), entry.sources[0].url);
+  assert.equal((await (await call(`/api/v1/releases/${id}`, { headers: { 'x-user': '1' } })).json()).downloads, 1);
+  assert.equal((await call('/api/v1/ingest', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"health":[]}' })).status, 404);
+  assert.equal((await call('/api/v1/ingest', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer secret-token' }, body: '{"health":[{"url":"https://download.scdn.co/SpotifyFullSetupX64.exe","status":200}]}' })).status, 200);
+  for (let n = 0; n < 19; n++) await call(`/api/v1/releases/${id}/comments`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-user': '1', origin: 'https://spotify-versions-history.robyrew.com' }, body: JSON.stringify({ body: `note ${n}` }) });
+  assert.equal((await call(`/api/v1/releases/${id}/comments`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-user': '1', origin: 'https://spotify-versions-history.robyrew.com' }, body: '{"body":"one more"}' })).status, 429);
+  assert.equal(await call('/nope'), null);
+});
+
+test('Repeated Set-Cookie headers stay a list for the node server', async () => {
+  const { nodeHeaders } = await import('../site/server/handle.mjs');
+  const response = new Response(null, { status: 302, headers: { location: 'https://auth.example.test/oidc/auth' } });
+  response.headers.append('set-cookie', '__Host-sv_sid=abc; Path=/; HttpOnly; Secure');
+  response.headers.append('set-cookie', '__Host-sv_sid_rt=%2F; Path=/; HttpOnly; Secure');
+  const headers = nodeHeaders(response);
+  assert.deepEqual(headers['set-cookie'], [
+    '__Host-sv_sid=abc; Path=/; HttpOnly; Secure',
+    '__Host-sv_sid_rt=%2F; Path=/; HttpOnly; Secure',
+  ]);
+  assert.equal(headers.location, 'https://auth.example.test/oidc/auth');
 });
