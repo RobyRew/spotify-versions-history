@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-11-14T00:39:00.217Z",
+  "testedVersion": "1.2.93.667.g7b5cc0ce",
+  "upstream": [
+    "https://raw.githubusercontent.com/LoaderSpot/table/main/table/versions.json",
+    "https://raw.githubusercontent.com/LoaderSpot/LoaderSpot/main/versions.json",
+    "https://repository.spotify.com/dists/stable/non-free/binary-amd64/Packages"
+  ]
+}

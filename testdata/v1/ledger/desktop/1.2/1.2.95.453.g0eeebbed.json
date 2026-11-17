@@ -1,0 +1,98 @@
+{
+  "schema": 2,
+  "product": "desktop",
+  "version": "1.2.95.453",
+  "fullVersion": "1.2.95.453.g0eeebbed",
+  "artifacts": [
+    {
+      "id": "1.2.95.453.g0eeebbed-windows-x64-exe",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-08-05",
+        "size": 148071328,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.95.453.g0eeebbed-x64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.95.453.g0eeebbed-windows-arm64-exe",
+      "platform": "windows",
+      "arch": "arm64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-08-05",
+        "size": 133553184,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.95.453.g0eeebbed-arm64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.95.453.g0eeebbed-macos-x64-tbz",
+      "platform": "macos",
+      "arch": "x64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-08-05",
+        "size": 178815809,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.2.95.453.g0eeebbed-x86_64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.95.453.g0eeebbed-macos-arm64-tbz",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-08-05",
+        "size": 162739806,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.2.95.453.g0eeebbed-arm64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.95.453.g0eeebbed-linux-x64-deb",
+      "platform": "linux",
+      "arch": "x64",
+      "format": "deb",
+      "listing": {
+        "date": "2026-08-07",
+        "size": 171638972,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-client_1.2.95.453.g0eeebbed_amd64.deb",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://repository.spotify.com/pool/non-free/s/spotify-client/spotify-client_1.2.95.453.g0eeebbed_amd64.deb",
+            "kind": "official",
+            "label": "Spotify repository"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "schema": 2,
+  "product": "desktop",
+  "version": "1.3.10.2586",
+  "fullVersion": "1.3.10.2586.g81a118a22460",
+  "artifacts": [
+    {
+      "id": "1.3.10.2586.g81a118a22460-windows-x64-exe",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-11-13",
+        "size": 161310152,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.10.2586.g81a118a22460-x64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.3.10.2586.g81a118a22460-windows-arm64-exe",
+      "platform": "windows",
+      "arch": "arm64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-11-13",
+        "size": 146190552,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.10.2586.g81a118a22460-arm64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.3.10.2586.g81a118a22460-macos-x64-tbz",
+      "platform": "macos",
+      "arch": "x64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-11-13",
+        "size": 194446926,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.10.2586.g81a118a22460-x86_64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.3.10.2586.g81a118a22460-macos-arm64-tbz",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-11-13",
+        "size": 175815322,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.10.2586.g81a118a22460-arm64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    }
+  ]
+}

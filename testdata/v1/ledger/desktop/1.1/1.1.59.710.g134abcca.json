@@ -1,0 +1,47 @@
+{
+  "schema": 2,
+  "product": "desktop",
+  "version": "1.1.59.710",
+  "fullVersion": "1.1.59.710.g134abcca",
+  "artifacts": [
+    {
+      "id": "1.1.59.710.g134abcca-windows-x86-exe",
+      "platform": "windows",
+      "arch": "x86",
+      "format": "exe",
+      "listing": {
+        "date": "2021-05-10",
+        "size": 79716960,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.1.59.710.g134abcca-x86.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/win32-x86/spotify_installer-1.1.59.710.g134abcca-27.exe",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.1.59.710.g134abcca-macos-x64-tbz",
+      "platform": "macos",
+      "arch": "x64",
+      "format": "tbz",
+      "listing": {
+        "date": null,
+        "size": null,
+        "sources": [
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/osx-x86_64/spotify-autoupdate-1.1.59.710.g134abcca-28.tbz",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "watched": {
+    "windows-x64": {
+      "etag": "\"f8f14c1c8e60157688d7ecad362ddd4e\"",
+      "size": 161195480,
+      "lastModified": "2026-11-12T08:09:26.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    },
+    "windows-arm64": {
+      "etag": "\"0986f18e6eb09058323767f8f20060af\"",
+      "size": 146096408,
+      "lastModified": "2026-11-12T08:09:18.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    },
+    "windows-x86": {
+      "etag": "\"a816e28898a9ff39494517a116be708e\"",
+      "size": 105290384,
+      "lastModified": "2026-02-22T18:28:34.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-09-18T04:29:31.949Z"
+    },
+    "windows-online": {
+      "etag": "\"724d2572d27100e0d94ba66cacd70aec\"",
+      "size": 1075688,
+      "lastModified": "2026-11-12T08:09:18.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    },
+    "macos-x64": {
+      "etag": "\"d9ea6c117663c7c97e5f96759c8a84ab\"",
+      "size": 197074927,
+      "lastModified": "2026-11-12T08:09:23.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    },
+    "macos-arm64": {
+      "etag": "\"e19af04acbb12184cee1858cd399338b\"",
+      "size": 178739753,
+      "lastModified": "2026-11-12T08:09:31.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    }
+  },
+  "updateService": {
+    "claim": "1.2.0.0",
+    "checkedAt": "2026-09-18T12:45:42.552Z",
+    "offers": {
+      "Win32_x86_64": {
+        "fullVersion": "1.3.1.234.g59d6bf59",
+        "os": "windows",
+        "architecture": "x64",
+        "httpPrefix": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe",
+        "binaryHash": "fdfc152db2f4249c72d944d75310c310b8d84974",
+        "targetVersion": 130100234,
+        "upgradeType": 2,
+        "seenAt": "2026-09-18T08:15:50.428Z",
+        "signedUrl": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe?fauth=eyJraWQiOiJTUE9UWlNIVEtDOTM4QVRBTzc5UDRIQzg1QzVJVUsySk9TUTUiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzY2RuLXVybC1zaWduZXIiLCJleHAiOjE3OTIzMTU3NDIsIm5iZiI6MTc4OTcyMzc0MiwicGF0aCI6Ii91cGdyYWRlL2NsaWVudC93aW4zMi14ODZfNjQvc3BvdGlmeV9pbnN0YWxsZXItMS4zLjEuMjM0Lmc1OWQ2YmY1OS01Mzc3LmV4ZSJ9.NqGX8buZAt61Baa9hkcK-UEYzDu6Y8DqA8FuI_Cs0t2pNNM6FTNgabIOrdnkKk64vvlG50rq8VQVpeMzzqzBJHfv6iTPDe1SaKoGHNEkwHTwiwlTRpvqqhTsAgIx5ljHT8ipULGIbT9Io-nXUFH6XUTjJkZ01VdysXh0yfSZXozR_gkcxYvuFsIsoS-su0xjaZYx6LOSaugY3QApQC7bhqca0aepVR1CjuuvV514jreadMsrxj7w9LWrZVT362M6RKIigewHk2vlggje5XECe5-xHdtr3LRdcDA-tlBkXktLzO32SHvW7evpfy-xkcDT7hdOwapGhlowxmHGMPZSqw",
+        "signedUntil": "2026-10-18T09:29:02Z"
+      },
+      "Win32_ARM64": {
+        "fullVersion": "1.3.1.234.g59d6bf59",
+        "os": "windows",
+        "architecture": "arm64",
+        "httpPrefix": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe",
+        "binaryHash": "218b9985e87aeea4b9112ef37d6c9df661c650be",
+        "targetVersion": 130100234,
+        "upgradeType": 2,
+        "seenAt": "2026-09-18T08:15:50.428Z",
+        "signedUrl": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe?fauth=eyJraWQiOiJTUE9UWlNIVEtDOTM4QVRBTzc5UDRIQzg1QzVJVUsySk9TUTUiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzY2RuLXVybC1zaWduZXIiLCJleHAiOjE3OTIzMTU3NDMsIm5iZiI6MTc4OTcyMzc0MywicGF0aCI6Ii91cGdyYWRlL2NsaWVudC93aW4zMi1hcm02NC9zcG90aWZ5X2luc3RhbGxlci0xLjMuMS4yMzQuZzU5ZDZiZjU5LTUzNzcuZXhlIn0.USHym0tMU2Jh53PhH2P3oeLrbcCkO2NyzI1m1stk-DZq73ZuhLpfPn4oIGcw2iYJi54vxjOMcIOCj9pyvk_5cfzEFdPSLJP9xvi7jfQV-E284_XzifVKBq9FNZmVCxrR6VRBUgTabw4g-tWzWYHQReHozahUwTMoDyxWT4NIu_gAfs8_Bnm0t_CrNAM7r1FE7-WeLAfQmnIqDMmx6mlC_hAV0wGssTRnWO7wR15lyX5zzVs5PoH0POw8Mk8036mPT7bo6wNvLrcoSzG8y0u031k_4Etyomqzlu8eSzlCQ2jZxXxoSA1J64VEapQwdnQJONRafpwMKzJaIRqJ9WdXhg",
+        "signedUntil": "2026-10-18T09:29:03Z"
+      },
+      "OSX_ARM64": {
+        "fullVersion": "1.3.1.234.g59d6bf59",
+        "os": "macos",
+        "architecture": "arm64",
+        "httpPrefix": "https://upgrade.scdn.co/upgrade/client/osx-arm64/spotify-autoupdate-1.3.1.234.g59d6bf59-5377.tbz",
+        "binaryHash": "2198591ad1774f4ca37619c06ab2e3bfe9a8d744",
+        "targetVersion": 130100234,
+        "upgradeType": 2,
+        "seenAt": "2026-09-18T08:15:50.428Z",
+        "signedUrl": "https://upgrade.scdn.co/upgrade/client/osx-arm64/spotify-autoupdate-1.3.1.234.g59d6bf59-5377.tbz?fauth=eyJraWQiOiJTUE9UWlNIVEtDOTM4QVRBTzc5UDRIQzg1QzVJVUsySk9TUTUiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzY2RuLXVybC1zaWduZXIiLCJleHAiOjE3OTIzMTU3NDYsIm5iZiI6MTc4OTcyMzc0NiwicGF0aCI6Ii91cGdyYWRlL2NsaWVudC9vc3gtYXJtNjQvc3BvdGlmeS1hdXRvdXBkYXRlLTEuMy4xLjIzNC5nNTlkNmJmNTktNTM3Ny50YnoifQ.mIe_2rxitwEQzeJrZQH-wGzn2_J6hoi8vPMYdpPVd6e2II1cCJqvyuzLc-Swb0geZcSyaHON-rzL-MZN7-fDY6iFYG-bN8BiSM_zVqGMrn5HLlc3LXA0AzHI0m2dzwxSQl03NJ5GZsV4KJNfASjsMVMqk2x3YBsCLQ-PXBL4WTUpNR66rogx7QOgzvooVMdxehKupVssN5bz76kdJQdfSPzg4BWtO2vuTnvs0_FFXHrl6aMcdxio1gFgtN-UfHf7Dox41c-XQek3_AQGHK0vi1tViUghKcIDJavxKXwPV8WU218xrUnqdzOEtXLUEvJnx4DzVeAHFtsz9LOzGAyGKQ",
+        "signedUntil": "2026-10-18T09:29:06Z"
+      }
+    }
+  },
+  "builds": [
+    {
+      "fullVersion": "1.3.9.2055.g806b5b278de8",
+      "platform": "windows",
+      "architecture": "x64",
+      "sha256": "2d3bf0d79580599a7a392feb82ed11d8eaa938c3059f79b5819caea156d55368",
+      "sha1": "b9dbf10fdc13a11ed6f0b4f51f5a237190502b03",
+      "size": 161195480,
+      "lastModified": "2026-11-12T08:09:26.000Z",
+      "capturedAt": "2026-11-12T08:33:27.238Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+      "etag": "\"f8f14c1c8e60157688d7ecad362ddd4e\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.9.2055.g806b5b278de8",
+      "platform": "windows",
+      "architecture": "arm64",
+      "sha256": "f30ac7f46220ffd1a2c2e1e3fde799c0716c479bd8aaf2fb2d2084f71a3edcff",
+      "sha1": "2ad561b1e6388ebeb87add18f2757e017485f014",
+      "size": 146096408,
+      "lastModified": "2026-11-12T08:09:18.000Z",
+      "capturedAt": "2026-11-12T08:33:27.238Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+      "etag": "\"0986f18e6eb09058323767f8f20060af\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.8.620.g39b276d5d7ac",
+      "platform": "windows",
+      "architecture": "x64",
+      "sha256": "a92da3465625a868187cb2cf46e7fbeb91df990c0eaaab279d04f0e14d559667",
+      "sha1": "747c23b83266898cefeb236105151dde7f848a36",
+      "size": 158250880,
+      "lastModified": "2026-11-06T07:32:47.000Z",
+      "capturedAt": "2026-11-06T07:33:59.155Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+      "etag": "\"7120858f3dd8ea7e3494c6d208f8ab56\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.8.620.g39b276d5d7ac",
+      "platform": "windows",
+      "architecture": "arm64",
+      "sha256": "0888f464b33b8a12f448cc0df944f47db7fe71078dd3fb145f0a8bd7e0ccb8ce",
+      "sha1": "67a5919e96c4c983be49f636e2ee6614f41708f7",
+      "size": 142633000,
+      "lastModified": "2026-11-06T07:32:40.000Z",
+      "capturedAt": "2026-11-06T07:33:59.155Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+      "etag": "\"084fae66dba5814381fa1870181b25ba\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.6.1921.g7086c071a617",
+      "platform": "windows",
+      "architecture": "x64",
+      "sha256": "e5ca46ad79de202c8deaf888c26f2a608b9e042142279e0690d589d80640591d",
+      "sha1": "941dfe2dbd9c9d07b4c34c8493b7453350ca1a4a",
+      "size": 157180192,
+      "lastModified": "2026-10-21T07:41:19.000Z",
+      "capturedAt": "2026-10-21T07:43:04.241Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+      "etag": "\"ba5436bbe0ae23d5c587f2260f54318f\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.6.1921.g7086c071a617",
+      "platform": "windows",
+      "architecture": "arm64",
+      "sha256": "1ab0ff830a6996e69f8db9cc5b7fb08bd6e87fc16e70642f8c5dfbe711ee948d",
+      "sha1": "05408efed94961f966b752157618a4d12540b600",
+      "size": 141607112,
+      "lastModified": "2026-10-21T07:41:10.000Z",
+      "capturedAt": "2026-10-21T07:43:04.241Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+      "etag": "\"acee9adb8c580b9eed3062d8d70918c2\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.5.3058.g5d40d5480152",
+      "platform": "windows",
+      "architecture": "x64",
+      "sha256": "8fb1a849ea283c5aff06c0b14e1631f17d939a06bac3279701566ea2aa2ebe5e",
+      "sha1": "5bb0ab7f7ad78c834ecca928b08c651f457bb3d5",
+      "size": 157223776,
+      "lastModified": "2026-10-15T09:12:51.000Z",
+      "capturedAt": "2026-10-15T09:39:43.616Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+      "etag": "\"65eb3a2131eddcb4d799da1da5c493bf\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.5.3058.g5d40d5480152",
+      "platform": "windows",
+      "architecture": "arm64",
+      "sha256": "2a20426163be44b2e8e880bcf13d55f78e6576177dea10f72a31f1dd673328de",
+      "sha1": "c54b53f8c7857bac118775a5ef80e8db33a6270f",
+      "size": 141488464,
+      "lastModified": "2026-10-15T09:12:42.000Z",
+      "capturedAt": "2026-10-15T09:39:43.616Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+      "etag": "\"e720ce3ef06353ea9a63eb936a65ee53\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.4.258.gc60b10b0946a",
+      "platform": "windows",
+      "architecture": "x64",
+      "sha256": "5d7cd1780218fde3de9888b2e7b95398de6d155228f8382961d6dbf14c2a20b0",
+      "sha1": "17005ffd1af2e38d7d7091f5e40eee61551be3b5",
+      "size": 156864632,
+      "lastModified": "2026-10-08T10:59:25.000Z",
+      "capturedAt": "2026-10-08T11:10:07.314Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+      "etag": "\"d862f72f33c370b7abff7e17a30e6ae0\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.4.258.gc60b10b0946a",
+      "platform": "windows",
+      "architecture": "arm64",
+      "sha256": "b81f51bbd5a18887a663013ba940aca42aff2955c4dc3c61c4a4ffe0b74efff1",
+      "sha1": "acdde443b24af416267bff2c738c2efad483c936",
+      "size": 141743640,
+      "lastModified": "2026-10-08T10:59:18.000Z",
+      "capturedAt": "2026-10-08T11:10:07.314Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+      "etag": "\"57f609dcb52bf0e92393cc34d4892cf0\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.3.264.gdaf3b824",
+      "platform": "windows",
+      "architecture": "x64",
+      "sha256": "965b5194afee3609c0c9648d1e26d7d9d49bf7973106921e387a65930075fc8f",
+      "sha1": "ebe17f8f30c47d8849e6582eb45cd7d222250e42",
+      "size": 156705256,
+      "lastModified": "2026-10-01T07:38:50.000Z",
+      "capturedAt": "2026-10-01T07:46:06.351Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+      "etag": "\"81861619dd0d2fb9146a325004178df1\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.3.264.gdaf3b824",
+      "platform": "windows",
+      "architecture": "arm64",
+      "sha256": "49cd8a15040f7723b0decb85344bff2ab907436f6eb220ac2732cbda29043c79",
+      "sha1": "41227441aa42258eca2d413a127655349a400a87",
+      "size": 141495984,
+      "lastModified": "2026-10-01T07:38:41.000Z",
+      "capturedAt": "2026-10-01T07:46:06.351Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+      "etag": "\"7963f4fe0bee94320bfef6ac8a0430b6\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.1.234.g59d6bf59",
+      "platform": "windows",
+      "architecture": "x64",
+      "sha256": "6c25d92dd38ddbfc1e4970765e865766d8ae2ef1758c6af8e9122c5050ee66dc",
+      "sha1": "fdfc152db2f4249c72d944d75310c310b8d84974",
+      "size": 148153000,
+      "lastModified": "2026-09-17T15:26:53.000Z",
+      "capturedAt": "2026-09-18T04:29:31.949Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+      "etag": "\"b67d6dfd3eeaa50617828ee3216cb47c\"",
+      "sensors": [
+        "permanent-url",
+        "update-service"
+      ],
+      "updateService": {
+        "httpPrefix": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe",
+        "binaryHash": "fdfc152db2f4249c72d944d75310c310b8d84974",
+        "targetVersion": 130100234,
+        "seenAt": "2026-09-18T08:15:50.428Z",
+        "signedUrl": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe?fauth=eyJraWQiOiJTUE9UWlNIVEtDOTM4QVRBTzc5UDRIQzg1QzVJVUsySk9TUTUiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzY2RuLXVybC1zaWduZXIiLCJleHAiOjE3OTIzMTU3NDIsIm5iZiI6MTc4OTcyMzc0MiwicGF0aCI6Ii91cGdyYWRlL2NsaWVudC93aW4zMi14ODZfNjQvc3BvdGlmeV9pbnN0YWxsZXItMS4zLjEuMjM0Lmc1OWQ2YmY1OS01Mzc3LmV4ZSJ9.NqGX8buZAt61Baa9hkcK-UEYzDu6Y8DqA8FuI_Cs0t2pNNM6FTNgabIOrdnkKk64vvlG50rq8VQVpeMzzqzBJHfv6iTPDe1SaKoGHNEkwHTwiwlTRpvqqhTsAgIx5ljHT8ipULGIbT9Io-nXUFH6XUTjJkZ01VdysXh0yfSZXozR_gkcxYvuFsIsoS-su0xjaZYx6LOSaugY3QApQC7bhqca0aepVR1CjuuvV514jreadMsrxj7w9LWrZVT362M6RKIigewHk2vlggje5XECe5-xHdtr3LRdcDA-tlBkXktLzO32SHvW7evpfy-xkcDT7hdOwapGhlowxmHGMPZSqw",
+        "signedUntil": "2026-10-18T09:29:02Z"
+      },
+      "verified": "binary_hash"
+    },
+    {
+      "fullVersion": "1.3.1.234.g59d6bf59",
+      "platform": "windows",
+      "architecture": "arm64",
+      "sha256": "fb6d58a6c733136472c7a8dd4470fb6e41c891f6df303d8ce4d7ce93664d10c2",
+      "sha1": "218b9985e87aeea4b9112ef37d6c9df661c650be",
+      "size": 133608368,
+      "lastModified": "2026-09-17T15:26:45.000Z",
+      "capturedAt": "2026-09-18T04:29:31.949Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+      "etag": "\"bb54ae2375343ff05f7f42227f4aa874\"",
+      "sensors": [
+        "permanent-url",
+        "update-service"
+      ],
+      "updateService": {
+        "httpPrefix": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe",
+        "binaryHash": "218b9985e87aeea4b9112ef37d6c9df661c650be",
+        "targetVersion": 130100234,
+        "seenAt": "2026-09-18T08:15:50.428Z",
+        "signedUrl": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe?fauth=eyJraWQiOiJTUE9UWlNIVEtDOTM4QVRBTzc5UDRIQzg1QzVJVUsySk9TUTUiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzY2RuLXVybC1zaWduZXIiLCJleHAiOjE3OTIzMTU3NDMsIm5iZiI6MTc4OTcyMzc0MywicGF0aCI6Ii91cGdyYWRlL2NsaWVudC93aW4zMi1hcm02NC9zcG90aWZ5X2luc3RhbGxlci0xLjMuMS4yMzQuZzU5ZDZiZjU5LTUzNzcuZXhlIn0.USHym0tMU2Jh53PhH2P3oeLrbcCkO2NyzI1m1stk-DZq73ZuhLpfPn4oIGcw2iYJi54vxjOMcIOCj9pyvk_5cfzEFdPSLJP9xvi7jfQV-E284_XzifVKBq9FNZmVCxrR6VRBUgTabw4g-tWzWYHQReHozahUwTMoDyxWT4NIu_gAfs8_Bnm0t_CrNAM7r1FE7-WeLAfQmnIqDMmx6mlC_hAV0wGssTRnWO7wR15lyX5zzVs5PoH0POw8Mk8036mPT7bo6wNvLrcoSzG8y0u031k_4Etyomqzlu8eSzlCQ2jZxXxoSA1J64VEapQwdnQJONRafpwMKzJaIRqJ9WdXhg",
+        "signedUntil": "2026-10-18T09:29:03Z"
+      },
+      "verified": "binary_hash"
+    },
+    {
+      "fullVersion": "1.2.53.440.g7b2f582a",
+      "platform": "windows",
+      "architecture": "x86",
+      "sha256": "c8f01ea8a1c8fce3bdb2664c2c5047f619ca75fa99e999f1ae81999f4ee01710",
+      "sha1": "caa06e5adb60a07f756062cb7c6d851c4c9d29b9",
+      "size": 105290384,
+      "lastModified": "2026-02-22T18:28:34.000Z",
+      "capturedAt": "2026-09-18T04:29:31.949Z",
+      "url": "https://download.scdn.co/SpotifyFullSetup.exe",
+      "etag": "\"a816e28898a9ff39494517a116be708e\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    }
+  ]
+}

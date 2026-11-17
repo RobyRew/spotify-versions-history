@@ -1,0 +1,104 @@
+{
+  "schema": 2,
+  "product": "desktop",
+  "version": "1.3.9.2055",
+  "fullVersion": "1.3.9.2055.g806b5b278de8",
+  "artifacts": [
+    {
+      "id": "1.3.9.2055.g806b5b278de8-windows-x64-exe",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-11-10",
+        "size": 161195480,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.9.2055.g806b5b278de8-x64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      },
+      "captures": [
+        {
+          "sha256": "2d3bf0d79580599a7a392feb82ed11d8eaa938c3059f79b5819caea156d55368",
+          "sha1": "b9dbf10fdc13a11ed6f0b4f51f5a237190502b03",
+          "size": 161195480,
+          "lastModified": "2026-11-12T08:09:26.000Z",
+          "capturedAt": "2026-11-12T08:33:27.238Z",
+          "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+          "etag": "\"f8f14c1c8e60157688d7ecad362ddd4e\"",
+          "sensors": [
+            "permanent-url"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1.3.9.2055.g806b5b278de8-windows-arm64-exe",
+      "platform": "windows",
+      "arch": "arm64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-11-10",
+        "size": 146096408,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.9.2055.g806b5b278de8-arm64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      },
+      "captures": [
+        {
+          "sha256": "f30ac7f46220ffd1a2c2e1e3fde799c0716c479bd8aaf2fb2d2084f71a3edcff",
+          "sha1": "2ad561b1e6388ebeb87add18f2757e017485f014",
+          "size": 146096408,
+          "lastModified": "2026-11-12T08:09:18.000Z",
+          "capturedAt": "2026-11-12T08:33:27.238Z",
+          "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+          "etag": "\"0986f18e6eb09058323767f8f20060af\"",
+          "sensors": [
+            "permanent-url"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1.3.9.2055.g806b5b278de8-macos-x64-tbz",
+      "platform": "macos",
+      "arch": "x64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-11-10",
+        "size": 194216565,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.9.2055.g806b5b278de8-x86_64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.3.9.2055.g806b5b278de8-macos-arm64-tbz",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-11-10",
+        "size": 175708417,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.9.2055.g806b5b278de8-arm64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    }
+  ]
+}

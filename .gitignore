@@ -7,3 +7,4 @@ site/var/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+dist-api/

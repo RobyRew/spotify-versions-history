@@ -1,0 +1,149 @@
+{
+  "schema": 2,
+  "product": "desktop",
+  "version": "1.2.53.440",
+  "fullVersion": "1.2.53.440.g7b2f582a",
+  "artifacts": [
+    {
+      "id": "1.2.53.440.g7b2f582a-windows-x64-exe",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "exe",
+      "listing": {
+        "date": "2025-02-10",
+        "size": 113931752,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.53.440.g7b2f582a-x64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.2.53.440.g7b2f582a-58.exe",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.53.440.g7b2f582a-windows-arm64-exe",
+      "platform": "windows",
+      "arch": "arm64",
+      "format": "exe",
+      "listing": {
+        "date": "2025-02-10",
+        "size": 106714960,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.53.440.g7b2f582a-arm64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.2.53.440.g7b2f582a-3.exe",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.53.440.g7b2f582a-windows-x86-exe",
+      "platform": "windows",
+      "arch": "x86",
+      "format": "exe",
+      "listing": {
+        "date": "2025-02-10",
+        "size": 105290384,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.53.440.g7b2f582a-x86.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/win32-x86/spotify_installer-1.2.53.440.g7b2f582a-58.exe",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      },
+      "captures": [
+        {
+          "sha256": "c8f01ea8a1c8fce3bdb2664c2c5047f619ca75fa99e999f1ae81999f4ee01710",
+          "sha1": "caa06e5adb60a07f756062cb7c6d851c4c9d29b9",
+          "size": 105290384,
+          "lastModified": "2026-02-22T18:28:34.000Z",
+          "capturedAt": "2026-09-18T04:29:31.949Z",
+          "url": "https://download.scdn.co/SpotifyFullSetup.exe",
+          "etag": "\"a816e28898a9ff39494517a116be708e\"",
+          "sensors": [
+            "permanent-url"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1.2.53.440.g7b2f582a-macos-x64-tbz",
+      "platform": "macos",
+      "arch": "x64",
+      "format": "tbz",
+      "listing": {
+        "date": "2025-02-10",
+        "size": 138589167,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.2.53.440.g7b2f582a-x86_64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/osx-x86_64/spotify-autoupdate-1.2.53.440.g7b2f582a-3186.tbz",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.53.440.g7b2f582a-macos-arm64-tbz",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "tbz",
+      "listing": {
+        "date": "2025-02-10",
+        "size": 132055140,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.2.53.440.g7b2f582a-arm64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/osx-arm64/spotify-autoupdate-1.2.53.440.g7b2f582a-3175.tbz",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.53.440.g7b2f582a-linux-x64-deb",
+      "platform": "linux",
+      "arch": "x64",
+      "format": "deb",
+      "listing": {
+        "date": "2025-02-10",
+        "size": 143507202,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-client_1.2.53.440.g7b2f582a_amd64.deb",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    }
+  ]
+}

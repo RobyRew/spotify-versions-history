@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "claim": "1.2.0.0",
+  "checkedAt": "2026-09-18T12:45:42.552Z",
+  "offers": {
+    "Win32_x86_64": {
+      "fullVersion": "1.3.1.234.g59d6bf59",
+      "os": "windows",
+      "architecture": "x64",
+      "httpPrefix": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe",
+      "binaryHash": "fdfc152db2f4249c72d944d75310c310b8d84974",
+      "targetVersion": 130100234,
+      "upgradeType": 2,
+      "seenAt": "2026-09-18T08:15:50.428Z",
+      "signedUrl": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe?fauth=eyJraWQiOiJTUE9UWlNIVEtDOTM4QVRBTzc5UDRIQzg1QzVJVUsySk9TUTUiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzY2RuLXVybC1zaWduZXIiLCJleHAiOjE3OTIzMTU3NDIsIm5iZiI6MTc4OTcyMzc0MiwicGF0aCI6Ii91cGdyYWRlL2NsaWVudC93aW4zMi14ODZfNjQvc3BvdGlmeV9pbnN0YWxsZXItMS4zLjEuMjM0Lmc1OWQ2YmY1OS01Mzc3LmV4ZSJ9.NqGX8buZAt61Baa9hkcK-UEYzDu6Y8DqA8FuI_Cs0t2pNNM6FTNgabIOrdnkKk64vvlG50rq8VQVpeMzzqzBJHfv6iTPDe1SaKoGHNEkwHTwiwlTRpvqqhTsAgIx5ljHT8ipULGIbT9Io-nXUFH6XUTjJkZ01VdysXh0yfSZXozR_gkcxYvuFsIsoS-su0xjaZYx6LOSaugY3QApQC7bhqca0aepVR1CjuuvV514jreadMsrxj7w9LWrZVT362M6RKIigewHk2vlggje5XECe5-xHdtr3LRdcDA-tlBkXktLzO32SHvW7evpfy-xkcDT7hdOwapGhlowxmHGMPZSqw",
+      "signedUntil": "2026-10-18T09:29:02Z"
+    },
+    "Win32_ARM64": {
+      "fullVersion": "1.3.1.234.g59d6bf59",
+      "os": "windows",
+      "architecture": "arm64",
+      "httpPrefix": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe",
+      "binaryHash": "218b9985e87aeea4b9112ef37d6c9df661c650be",
+      "targetVersion": 130100234,
+      "upgradeType": 2,
+      "seenAt": "2026-09-18T08:15:50.428Z",
+      "signedUrl": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.3.1.234.g59d6bf59-5377.exe?fauth=eyJraWQiOiJTUE9UWlNIVEtDOTM4QVRBTzc5UDRIQzg1QzVJVUsySk9TUTUiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzY2RuLXVybC1zaWduZXIiLCJleHAiOjE3OTIzMTU3NDMsIm5iZiI6MTc4OTcyMzc0MywicGF0aCI6Ii91cGdyYWRlL2NsaWVudC93aW4zMi1hcm02NC9zcG90aWZ5X2luc3RhbGxlci0xLjMuMS4yMzQuZzU5ZDZiZjU5LTUzNzcuZXhlIn0.USHym0tMU2Jh53PhH2P3oeLrbcCkO2NyzI1m1stk-DZq73ZuhLpfPn4oIGcw2iYJi54vxjOMcIOCj9pyvk_5cfzEFdPSLJP9xvi7jfQV-E284_XzifVKBq9FNZmVCxrR6VRBUgTabw4g-tWzWYHQReHozahUwTMoDyxWT4NIu_gAfs8_Bnm0t_CrNAM7r1FE7-WeLAfQmnIqDMmx6mlC_hAV0wGssTRnWO7wR15lyX5zzVs5PoH0POw8Mk8036mPT7bo6wNvLrcoSzG8y0u031k_4Etyomqzlu8eSzlCQ2jZxXxoSA1J64VEapQwdnQJONRafpwMKzJaIRqJ9WdXhg",
+      "signedUntil": "2026-10-18T09:29:03Z"
+    },
+    "OSX_ARM64": {
+      "fullVersion": "1.3.1.234.g59d6bf59",
+      "os": "macos",
+      "architecture": "arm64",
+      "httpPrefix": "https://upgrade.scdn.co/upgrade/client/osx-arm64/spotify-autoupdate-1.3.1.234.g59d6bf59-5377.tbz",
+      "binaryHash": "2198591ad1774f4ca37619c06ab2e3bfe9a8d744",
+      "targetVersion": 130100234,
+      "upgradeType": 2,
+      "seenAt": "2026-09-18T08:15:50.428Z",
+      "signedUrl": "https://upgrade.scdn.co/upgrade/client/osx-arm64/spotify-autoupdate-1.3.1.234.g59d6bf59-5377.tbz?fauth=eyJraWQiOiJTUE9UWlNIVEtDOTM4QVRBTzc5UDRIQzg1QzVJVUsySk9TUTUiLCJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzY2RuLXVybC1zaWduZXIiLCJleHAiOjE3OTIzMTU3NDYsIm5iZiI6MTc4OTcyMzc0NiwicGF0aCI6Ii91cGdyYWRlL2NsaWVudC9vc3gtYXJtNjQvc3BvdGlmeS1hdXRvdXBkYXRlLTEuMy4xLjIzNC5nNTlkNmJmNTktNTM3Ny50YnoifQ.mIe_2rxitwEQzeJrZQH-wGzn2_J6hoi8vPMYdpPVd6e2II1cCJqvyuzLc-Swb0geZcSyaHON-rzL-MZN7-fDY6iFYG-bN8BiSM_zVqGMrn5HLlc3LXA0AzHI0m2dzwxSQl03NJ5GZsV4KJNfASjsMVMqk2x3YBsCLQ-PXBL4WTUpNR66rogx7QOgzvooVMdxehKupVssN5bz76kdJQdfSPzg4BWtO2vuTnvs0_FFXHrl6aMcdxio1gFgtN-UfHf7Dox41c-XQek3_AQGHK0vi1tViUghKcIDJavxKXwPV8WU218xrUnqdzOEtXLUEvJnx4DzVeAHFtsz9LOzGAyGKQ",
+      "signedUntil": "2026-10-18T09:29:06Z"
+    }
+  }
+}

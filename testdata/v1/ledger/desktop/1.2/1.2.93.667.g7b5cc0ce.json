@@ -1,0 +1,76 @@
+{
+  "schema": 2,
+  "product": "desktop",
+  "version": "1.2.93.667",
+  "fullVersion": "1.2.93.667.g7b5cc0ce",
+  "artifacts": [
+    {
+      "id": "1.2.93.667.g7b5cc0ce-windows-x64-exe",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-07-01",
+        "size": 146096232,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.93.667.g7b5cc0ce-x64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.93.667.g7b5cc0ce-windows-arm64-exe",
+      "platform": "windows",
+      "arch": "arm64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-07-01",
+        "size": 132373048,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.93.667.g7b5cc0ce-arm64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.93.667.g7b5cc0ce-macos-x64-tbz",
+      "platform": "macos",
+      "arch": "x64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-07-01",
+        "size": 176939939,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.2.93.667.g7b5cc0ce-x86_64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.93.667.g7b5cc0ce-macos-arm64-tbz",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-07-01",
+        "size": 160899077,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.2.93.667.g7b5cc0ce-arm64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    }
+  ]
+}

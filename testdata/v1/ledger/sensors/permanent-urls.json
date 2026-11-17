@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "watched": {
+    "windows-x64": {
+      "etag": "\"f8f14c1c8e60157688d7ecad362ddd4e\"",
+      "size": 161195480,
+      "lastModified": "2026-11-12T08:09:26.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    },
+    "windows-arm64": {
+      "etag": "\"0986f18e6eb09058323767f8f20060af\"",
+      "size": 146096408,
+      "lastModified": "2026-11-12T08:09:18.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    },
+    "windows-x86": {
+      "etag": "\"a816e28898a9ff39494517a116be708e\"",
+      "size": 105290384,
+      "lastModified": "2026-02-22T18:28:34.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-09-18T04:29:31.949Z"
+    },
+    "windows-online": {
+      "etag": "\"724d2572d27100e0d94ba66cacd70aec\"",
+      "size": 1075688,
+      "lastModified": "2026-11-12T08:09:18.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    },
+    "macos-x64": {
+      "etag": "\"d9ea6c117663c7c97e5f96759c8a84ab\"",
+      "size": 197074927,
+      "lastModified": "2026-11-12T08:09:23.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    },
+    "macos-arm64": {
+      "etag": "\"e19af04acbb12184cee1858cd399338b\"",
+      "size": 178739753,
+      "lastModified": "2026-11-12T08:09:31.000Z",
+      "checkedAt": "2026-11-12T08:33:27.238Z",
+      "changedAt": "2026-11-12T08:33:27.238Z"
+    }
+  }
+}

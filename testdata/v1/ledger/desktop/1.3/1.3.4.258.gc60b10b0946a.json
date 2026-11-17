@@ -1,0 +1,126 @@
+{
+  "schema": 2,
+  "product": "desktop",
+  "version": "1.3.4.258",
+  "fullVersion": "1.3.4.258.gc60b10b0946a",
+  "artifacts": [
+    {
+      "id": "1.3.4.258.gc60b10b0946a-windows-x64-exe",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-10-06",
+        "size": 156864632,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.4.258.gc60b10b0946a-x64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      },
+      "captures": [
+        {
+          "sha256": "5d7cd1780218fde3de9888b2e7b95398de6d155228f8382961d6dbf14c2a20b0",
+          "sha1": "17005ffd1af2e38d7d7091f5e40eee61551be3b5",
+          "size": 156864632,
+          "lastModified": "2026-10-08T10:59:25.000Z",
+          "capturedAt": "2026-10-08T11:10:07.314Z",
+          "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+          "etag": "\"d862f72f33c370b7abff7e17a30e6ae0\"",
+          "sensors": [
+            "permanent-url"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1.3.4.258.gc60b10b0946a-windows-arm64-exe",
+      "platform": "windows",
+      "arch": "arm64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-10-06",
+        "size": 141743640,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.4.258.gc60b10b0946a-arm64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      },
+      "captures": [
+        {
+          "sha256": "b81f51bbd5a18887a663013ba940aca42aff2955c4dc3c61c4a4ffe0b74efff1",
+          "sha1": "acdde443b24af416267bff2c738c2efad483c936",
+          "size": 141743640,
+          "lastModified": "2026-10-08T10:59:18.000Z",
+          "capturedAt": "2026-10-08T11:10:07.314Z",
+          "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+          "etag": "\"57f609dcb52bf0e92393cc34d4892cf0\"",
+          "sensors": [
+            "permanent-url"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1.3.4.258.gc60b10b0946a-macos-x64-tbz",
+      "platform": "macos",
+      "arch": "x64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-10-06",
+        "size": 187701122,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.4.258.gc60b10b0946a-x86_64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.3.4.258.gc60b10b0946a-macos-arm64-tbz",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-10-06",
+        "size": 170671699,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.4.258.gc60b10b0946a-arm64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.3.4.258.gc60b10b0946a-linux-x64-deb",
+      "platform": "linux",
+      "arch": "x64",
+      "format": "deb",
+      "listing": {
+        "date": "2026-10-12",
+        "size": 179241028,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-client_1.3.4.258.gc60b10b0946a_amd64.deb",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://repository.spotify.com/pool/non-free/s/spotify-client/spotify-client_1.3.4.258.gc60b10b0946a_amd64.deb",
+            "kind": "official",
+            "label": "Spotify repository"
+          }
+        ]
+      }
+    }
+  ]
+}

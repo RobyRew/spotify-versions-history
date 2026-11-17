@@ -1,0 +1,46 @@
+name: Ledger and feeds
+# Type check and tests for the ledger v2 package at the repository root (lib/, scripts/, test/).
+# While site/ still exists, also compares the v1 files generated from the ledger with the v1
+# generator's on the full site/data (scripts/legacy/check-v1-equivalence.mjs).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'scripts/**'
+      - 'test/**'
+      - 'testdata/**'
+      - 'ledger/**'
+      - 'site/data/**'
+      - 'site/src/lib/catalog.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vitest.config.ts'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Type check (TypeScript 7)
+        run: npm run check
+      - name: Unit and golden tests
+        run: npm test
+      - name: v1 files from the ledger against the v1 generator on the full catalog
+        run: npm run ledger:equivalence

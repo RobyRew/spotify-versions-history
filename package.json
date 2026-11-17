@@ -1,0 +1,26 @@
+{
+  "name": "spotify-versions-history",
+  "private": true,
+  "type": "module",
+  "version": "2.0.0-alpha.0",
+  "description": "Archive of official Spotify client builds: ledger, sensors and feeds.",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "ledger:migrate": "node scripts/migrate-v2.ts",
+    "ledger:schema": "node scripts/gen-schema.ts",
+    "ledger:v1": "node scripts/build-v1.ts",
+    "ledger:equivalence": "node scripts/legacy/check-v1-equivalence.mjs"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

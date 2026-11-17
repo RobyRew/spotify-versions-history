@@ -1,0 +1,96 @@
+{
+  "schema": 2,
+  "product": "desktop",
+  "version": "1.2.85.519",
+  "fullVersion": "1.2.85.519.g549a528b",
+  "artifacts": [
+    {
+      "id": "1.2.85.519.g549a528b-windows-x64-exe",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-03-13",
+        "size": 127874744,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.85.519.g549a528b-x64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.2.85.519.g549a528b-4062.exe",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.85.519.g549a528b-windows-arm64-exe",
+      "platform": "windows",
+      "arch": "arm64",
+      "format": "exe",
+      "listing": {
+        "date": "2026-03-13",
+        "size": 117331872,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.2.85.519.g549a528b-arm64.exe",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.2.85.519.g549a528b-4019.exe",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.85.519.g549a528b-macos-x64-tbz",
+      "platform": "macos",
+      "arch": "x64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-03-13",
+        "size": 158194053,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.2.85.519.g549a528b-x86_64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/osx-x86_64/spotify-autoupdate-1.2.85.519.g549a528b-4022.tbz",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1.2.85.519.g549a528b-macos-arm64-tbz",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "tbz",
+      "listing": {
+        "date": "2026-03-13",
+        "size": 145057897,
+        "sources": [
+          {
+            "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.2.85.519.g549a528b-arm64.tbz",
+            "kind": "mirror",
+            "label": "LoadSpot mirror"
+          },
+          {
+            "url": "https://upgrade.scdn.co/upgrade/client/osx-arm64/spotify-autoupdate-1.2.85.519.g549a528b-4022.tbz",
+            "kind": "official",
+            "label": "Spotify CDN"
+          }
+        ]
+      }
+    }
+  ]
+}
