@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-11-15T23:49:05.499Z",
+  "checkedAt": "2026-11-17T18:24:26.411Z",
   "ios": {
     "bundleId": "com.spotify.client",
     "version": "9.2.0",
@@ -15,7 +15,7 @@
     "productId": "9NCBCSZSJRSB",
     "title": "Spotify - Music and Podcasts",
     "version": null,
-    "lastUpdate": "2026-11-12T08:08:24Z",
+    "lastUpdate": "2026-11-17T13:19:45Z",
     "listing": "https://apps.microsoft.com/detail/9ncbcszsjrsb"
   },
   "android": {
