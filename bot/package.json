@@ -1,0 +1,10 @@
+{
+  "name": "@robyrew/spotify-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./index.ts" },
+  "dependencies": {
+    "@robyrew/bot-sdk": "file:../../robyrew-bot/sdk"
+  }
+}
