@@ -1,0 +1,58 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Origin: Spotify LTD
+Label: Spotify Public Repository
+Suite: stable
+Codename: stable
+Version: 0.4
+Date: Mon, 09 Nov 2026 09:00:02 UTC
+Architectures: amd64 i386
+Components: non-free
+Description: Spotify's repository for the desktop client
+MD5Sum:
+ 233ff0500aaeeb6adb15e4fae534d147 4049 non-free/binary-amd64/Packages
+ 5e5eb0264ae218a4d0b1171d035660dc 1626 non-free/binary-amd64/Packages.gz
+ d0c9d21e14edc4f0ab61b5a38cd3f001 179 non-free/binary-amd64/Release
+ ad3c058a670253f2022b15a883ac2855 2724 non-free/binary-i386/Packages
+ 59e37fc4d621d1512ad521d04426b2d3 1171 non-free/binary-i386/Packages.gz
+ 7d917f86644501378936d6ed4dfe8dd4 178 non-free/binary-i386/Release
+ d41d8cd98f00b204e9800998ecf8427e 0 non-free/source/Sources
+ 7029066c27ac6f5ef18d660d5741979a 20 non-free/source/Sources.gz
+ fe1b9404b394c82b552dfcc07e908957 180 non-free/source/Release
+SHA1:
+ 85eb71b42ea66d868f1a6c48aeeac2f2e8dde2c1 4049 non-free/binary-amd64/Packages
+ 285a91b2b01faa89f14274bb83d6bcffcede9753 1626 non-free/binary-amd64/Packages.gz
+ f63f3025cc2a307283f63f5a5d2e89f1260ffa19 179 non-free/binary-amd64/Release
+ dd2ceca28abd6f1310d87cacda87683789578c51 2724 non-free/binary-i386/Packages
+ 40da8f5ff94fc0e4cd1cca74be420b6361ca76f1 1171 non-free/binary-i386/Packages.gz
+ 692214450257b4dd63b28f6eb684e531848188d6 178 non-free/binary-i386/Release
+ da39a3ee5e6b4b0d3255bfef95601890afd80709 0 non-free/source/Sources
+ 46c6643f07aa7f6bfe7118de926b86defc5087c4 20 non-free/source/Sources.gz
+ 1eeec4a69ea2411a31895c7e487c569d9a44d36b 180 non-free/source/Release
+SHA256:
+ 4faba0c9477c6c3154b2c968a05870fc6a599069d525f024fcec72df0ecdec83 4049 non-free/binary-amd64/Packages
+ a71b681ac97d739583d3b93c88fa780047dd05656120ceb98fbfde77de8df97f 1626 non-free/binary-amd64/Packages.gz
+ 91da79dcbbe10c985013f51e651cf91ed5192805a82e2fc8db4ef6352c6783d5 179 non-free/binary-amd64/Release
+ 9ae4ca1e5571f7aeee79a2b5ac2375df6aaa3b4f40ed2880b1de98e2adf5059a 2724 non-free/binary-i386/Packages
+ e2819cd8498ee25fa699dbf628ca39aca656098734af5e9b75c4b54eaf79e5a1 1171 non-free/binary-i386/Packages.gz
+ 6ae00fbdf88b3104936cb0c12c9cadbce7ca0ba2adcb0a3db6f0bee1f8e74d2a 178 non-free/binary-i386/Release
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 0 non-free/source/Sources
+ 59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2 20 non-free/source/Sources.gz
+ c366c4aea1a7b490a51f0c4a11b1c2ba8d05f638c3adf7eaed7989d37dd23027 180 non-free/source/Release
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCAAdFiEE4Qlry/9tQYeW3nhRU4TOgrpSyDoFAmrxi5IACgkQU4TOgrpS
+yDpq+Q//QFmgVqlNNFuaGYc8/AlgJVosCazpUOSxT0C1JohmLOO1+LCDiXY9P6oP
+Pkq0po19RN7UO3EZtfb1MHzs+ZNJS74ez6NyN3H5ScxmN8QmpjWFo4GbZqpY+r4b
+ecge29KAperrUChvyopIA25ySmBkmB0/GU/jl4IEYS1cmUqmejgkoG7+OswWzeRP
+wXCXDuL8klazWIQkUiArxqwXhwyvVYE7Y1UkubH/bvleLNwM67M8QydusnEWtuPN
+W/K2G0c36mBL2x4mDXXZXv/+woNMnbHSaRWiT67jP+6tVATpz5WuvIM3LC7EImSy
+UScPSVBmXlH0BiIZMN6OSFxSiAfMoAHxxxp2z/q4/3EWIk4yrneVhQ1grBcFfQ1M
+ULXBtHe1afHld9r2ePVMAb8+YGKQH/bUYkxY1XQzTImMzaOrX3cE1N3SGnMRfrom
+jXy6Xz54sDKoE69nX2v/6cYZM2Gjva/O3S32Yah4m48Ue9hlaqUsqEAoPVYYQl+B
+D0Mytq2XzNZDUtyHugKMYEY974xKIt8J9jbHXUYQ22FAP2igjc4kyDEq5a+KDWf6
+D6hz1c9UCb1+yCJ4iV/KtW7x6pyArZn6HtOaxvLrQpd1ugnNlC9Po/IxA/Q+s/un
+2yt+gc0st9oKbd8Mro3lbClBPko11tqPgp7GlwDztF9ooo0RDaE=
+=Ut5T
+-----END PGP SIGNATURE-----

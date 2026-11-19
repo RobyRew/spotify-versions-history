@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "windows": {
+    "authenticode": {
+      "subject": {
+        "CN": "Spotify AB",
+        "O": "Spotify AB",
+        "L": "Stockholm",
+        "C": "SE",
+        "serialNumber": "556703-7485",
+        "businessCategory": "Private Organization",
+        "jurisdictionCountryName": "SE"
+      },
+      "issuer": "CN=DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA1, O=DigiCert, Inc., C=US",
+      "root": "CN=DigiCert Trusted Root G4, OU=www.digicert.com, O=DigiCert Inc, C=US",
+      "observed": {
+        "at": "2026-11-19",
+        "from": "Authenticode certificate table of download.scdn.co SpotifyFullSetupX64.exe, SpotifyFullSetupARM64.exe and SpotifySetup.exe (1.3.10.2586) and SpotifyFullSetup.exe (1.2.53.440)"
+      }
+    }
+  },
+  "windowsStore": {
+    "productId": "9NCBCSZSJRSB",
+    "packageIdentityName": "SpotifyAB.SpotifyMusic",
+    "packageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+    "publisher": "CN=453637B3-4E12-4CDF-B0D3-2A3C863BF6EF",
+    "wuCategoryId": "5c353b9c-7ac7-4d27-af07-923e7d9aa2e2",
+    "observed": {
+      "at": "2026-11-19",
+      "from": "displaycatalog.mp.microsoft.com/v7.0/products/9NCBCSZSJRSB (testdata/channels/store/displaycatalog.json)"
+    }
+  },
+  "macos": {
+    "teamId": "2FNC3A47ZF",
+    "identifier": "com.spotify.client",
+    "authorities": [
+      "Developer ID Application: Spotify (2FNC3A47ZF)",
+      "Developer ID Certification Authority",
+      "Apple Root CA"
+    ],
+    "observed": {
+      "at": "2026-11-19",
+      "from": "codesign -dvv of Spotify.app 1.3.10.2586 inside download.scdn.co Spotify.dmg and SpotifyARM64.dmg"
+    }
+  },
+  "apt": {
+    "repository": "https://repository.spotify.com",
+    "suites": ["stable", "testing"],
+    "keys": [
+      {
+        "fingerprint": "E1096BCBFF6D418796DE78515384CE82BA52C83A",
+        "file": "apt/spotify-5384CE82BA52C83A.gpg",
+        "uid": "Spotify Public Repository Signing Key <tux@spotify.com>",
+        "created": "2025-11-21",
+        "source": "https://download.spotify.com/debian/pubkey_5384CE82BA52C83A.gpg"
+      }
+    ]
+  },
+  "snap": {
+    "name": "spotify",
+    "snapId": "pOBIoZ2LrCB3rDohMxoYGnbN14EHOgD7",
+    "developerId": "Z7emHVerQzTDQrOcaLJ8wO1ir1NPl3fG",
+    "authority": "canonical",
+    "observed": {
+      "at": "2026-11-19",
+      "from": "snap-revision assertion of revision 99 from assertions.ubuntu.com (testdata/channels/snap/snap-revision-stable.assert)"
+    }
+  },
+  "android": {
+    "package": "com.spotify.music",
+    "signerSha256": [
+      "65:05:B1:81:93:33:44:F9:38:93:D5:86:E3:99:B9:46:16:18:3F:04:34:9C:B5:72:A9:E8:1A:33:35:E2:8F:FD"
+    ],
+    "observed": {
+      "at": "2026-11-19",
+      "from": "https://www.spotify.com/.well-known/assetlinks.json"
+    }
+  },
+  "ios": {
+    "trackId": 324684580,
+    "bundleId": "com.spotify.client",
+    "observed": {
+      "at": "2026-11-19",
+      "from": "itunes.apple.com/lookup?id=324684580 (testdata/channels/ios/itunes-lookup-us.json)"
+    }
+  }
+}

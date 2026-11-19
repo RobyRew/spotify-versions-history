@@ -1,0 +1,44 @@
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import { loadTrust } from '../lib/trust.ts';
+
+const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
+
+/** v4 OpenPGP fingerprint of the first public-key packet: SHA-1 over 0x99, a two-byte length and the packet body. */
+function primaryKeyFingerprint(key: Uint8Array): string {
+  const tagByte = key[0]!;
+  let length: number;
+  let start: number;
+  if (tagByte & 0x40) {
+    if ((tagByte & 0x3f) !== 6) throw new Error('first packet is not a public key');
+    const first = key[1]!;
+    if (first < 192) { length = first; start = 2; }
+    else if (first < 224) { length = ((first - 192) << 8) + key[2]! + 192; start = 3; }
+    else { length = Buffer.from(key.subarray(2, 6)).readUInt32BE(); start = 6; }
+  } else {
+    if (((tagByte >> 2) & 0x0f) !== 6) throw new Error('first packet is not a public key');
+    const lengthBytes = [1, 2, 4][tagByte & 3]!;
+    length = Buffer.from(key.subarray(1, 1 + lengthBytes)).readUIntBE(0, lengthBytes);
+    start = 1 + lengthBytes;
+  }
+  const body = key.subarray(start, start + length);
+  return createHash('sha1').update(Buffer.from([0x99, length >> 8, length & 0xff])).update(body).digest('hex').toUpperCase();
+}
+
+describe('trust anchors', async () => {
+  const anchors = await loadTrust(here('../ledger/trust/anchors.json'));
+
+  it('parse against their schema', () => {
+    expect(anchors.macos.teamId).toBe('2FNC3A47ZF');
+    expect(anchors.windowsStore.packageFamilyName.startsWith(`${anchors.windowsStore.packageIdentityName}_`)).toBe(true);
+  });
+
+  it('pin apt key files whose fingerprint is the one written next to them', async () => {
+    for (const key of anchors.apt.keys) {
+      const file = new Uint8Array(await readFile(here(`../ledger/trust/${key.file}`)));
+      expect(primaryKeyFingerprint(file)).toBe(key.fingerprint);
+    }
+  });
+});

@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+Content-Length: 178848157
+Content-Type: application/x-apple-diskimage
+Last-Modified: Wed, 18 Nov 2026 13:09:18 GMT
+ETag: "2b9355e3343d9a13705c47df29b2829c"
+x-goog-generation: 1795007358841109
+x-amz-checksum-crc32c: HFrDVg==

@@ -1,0 +1,176 @@
+{
+  "Product": {
+    "LastModifiedDate": "2026-11-18T13:09:44.3722328Z",
+    "ProductId": "9NCBCSZSJRSB",
+    "Properties": {
+      "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+      "PackageIdentityName": "SpotifyAB.SpotifyMusic",
+      "PublisherCertificateName": "CN=453637B3-4E12-4CDF-B0D3-2A3C863BF6EF",
+      "PublisherId": "10113470"
+    },
+    "DisplaySkuAvailabilities": [
+      {
+        "Sku": {
+          "SkuId": "0010",
+          "LastModifiedDate": "2026-11-18T13:09:44.3722328Z",
+          "Properties": {
+            "FulfillmentData": {
+              "ProductId": "9NCBCSZSJRSB",
+              "WuBundleId": "070d01aa-a4e5-4580-8ca2-1ca86396b8ad",
+              "WuCategoryId": "5c353b9c-7ac7-4d27-af07-923e7d9aa2e2",
+              "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+              "SkuId": "0010",
+              "Content": null,
+              "PackageFeatures": null
+            },
+            "LastUpdateDate": "2026-11-18T13:09:44.0000000Z",
+            "VersionString": "",
+            "Packages": [
+              {
+                "PackageFullName": "SpotifyAB.SpotifyMusic_1.192.647.0_x86__zpdnekdrzrea0",
+                "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+                "PackageId": "e3ffbaf1-533d-0e62-534a-7003b35c0759-X86",
+                "ContentId": "32ad62fb-8c4f-bf5a-b766-338fbaed9953",
+                "Architectures": [
+                  "x86"
+                ],
+                "Version": "282299652833280",
+                "PackageFormat": "Appx",
+                "Hash": "G0nN8YnpIp/WVcYHscTD7dM8oVYljBLh2xR1GMSBJt8=",
+                "HashAlgorithm": "SHA256",
+                "MaxDownloadSizeInBytes": 110594921,
+                "PackageDownloadUris": null
+              },
+              {
+                "PackageFullName": "SpotifyAB.SpotifyMusic_1.253.440.0_x86__zpdnekdrzrea0",
+                "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+                "PackageId": "35387a44-14fc-d005-b755-1bdf8487290f-X86",
+                "ContentId": "32ad62fb-8c4f-bf5a-b766-338fbaed9953",
+                "Architectures": [
+                  "x86"
+                ],
+                "Version": "282561632272384",
+                "PackageFormat": "Appx",
+                "Hash": "jaqjjCRRHvDaaE1+V5xOlE41FGRqvB78YveeJhA+Uys=",
+                "HashAlgorithm": "SHA256",
+                "MaxDownloadSizeInBytes": 149486140,
+                "PackageDownloadUris": null
+              },
+              {
+                "PackageFullName": "SpotifyAB.SpotifyMusic_1.310.2586.0_x64__zpdnekdrzrea0",
+                "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+                "PackageId": "dfe26ab7-79fa-78c2-f739-07a71aa32215-X64",
+                "ContentId": "32ad62fb-8c4f-bf5a-b766-338fbaed9953",
+                "Architectures": [
+                  "x64"
+                ],
+                "Version": "282806586048512",
+                "PackageFormat": "Appx",
+                "Hash": "BmjPK0qF3dQknaX5CMZxwG7564h04AZbVqINnkPzKlw=",
+                "HashAlgorithm": "SHA256",
+                "MaxDownloadSizeInBytes": 227483806,
+                "PackageDownloadUris": null
+              },
+              {
+                "PackageFullName": "SpotifyAB.SpotifyMusic_1.310.2586.0_arm64__zpdnekdrzrea0",
+                "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+                "PackageId": "9b29e6d8-015a-37ef-ac32-d7be10b77c8e-Arm64",
+                "ContentId": "32ad62fb-8c4f-bf5a-b766-338fbaed9953",
+                "Architectures": [
+                  "arm64"
+                ],
+                "Version": "282806586048512",
+                "PackageFormat": "Appx",
+                "Hash": "fvJtdUwKwY9zw8ShaRSQHZu1FqhHqB4y/igEaK2hghk=",
+                "HashAlgorithm": "SHA256",
+                "MaxDownloadSizeInBytes": 217485187,
+                "PackageDownloadUris": null
+              }
+            ]
+          }
+        }
+      },
+      {
+        "Sku": {
+          "SkuId": "0011",
+          "LastModifiedDate": "2026-11-18T13:09:44.3722328Z",
+          "Properties": {
+            "FulfillmentData": {
+              "ProductId": "9NCBCSZSJRSB",
+              "WuBundleId": "070d01aa-a4e5-4580-8ca2-1ca86396b8ad",
+              "WuCategoryId": "5c353b9c-7ac7-4d27-af07-923e7d9aa2e2",
+              "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+              "SkuId": "0011",
+              "Content": null,
+              "PackageFeatures": null
+            },
+            "LastUpdateDate": "2026-11-18T13:09:44.0000000Z",
+            "VersionString": "",
+            "Packages": [
+              {
+                "PackageFullName": "SpotifyAB.SpotifyMusic_1.192.647.0_x86__zpdnekdrzrea0",
+                "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+                "PackageId": "e3ffbaf1-533d-0e62-534a-7003b35c0759-X86",
+                "ContentId": "32ad62fb-8c4f-bf5a-b766-338fbaed9953",
+                "Architectures": [
+                  "x86"
+                ],
+                "Version": "282299652833280",
+                "PackageFormat": "Appx",
+                "Hash": "G0nN8YnpIp/WVcYHscTD7dM8oVYljBLh2xR1GMSBJt8=",
+                "HashAlgorithm": "SHA256",
+                "MaxDownloadSizeInBytes": 110594921,
+                "PackageDownloadUris": null
+              },
+              {
+                "PackageFullName": "SpotifyAB.SpotifyMusic_1.253.440.0_x86__zpdnekdrzrea0",
+                "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+                "PackageId": "35387a44-14fc-d005-b755-1bdf8487290f-X86",
+                "ContentId": "32ad62fb-8c4f-bf5a-b766-338fbaed9953",
+                "Architectures": [
+                  "x86"
+                ],
+                "Version": "282561632272384",
+                "PackageFormat": "Appx",
+                "Hash": "jaqjjCRRHvDaaE1+V5xOlE41FGRqvB78YveeJhA+Uys=",
+                "HashAlgorithm": "SHA256",
+                "MaxDownloadSizeInBytes": 149486140,
+                "PackageDownloadUris": null
+              },
+              {
+                "PackageFullName": "SpotifyAB.SpotifyMusic_1.310.2586.0_x64__zpdnekdrzrea0",
+                "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+                "PackageId": "dfe26ab7-79fa-78c2-f739-07a71aa32215-X64",
+                "ContentId": "32ad62fb-8c4f-bf5a-b766-338fbaed9953",
+                "Architectures": [
+                  "x64"
+                ],
+                "Version": "282806586048512",
+                "PackageFormat": "Appx",
+                "Hash": "BmjPK0qF3dQknaX5CMZxwG7564h04AZbVqINnkPzKlw=",
+                "HashAlgorithm": "SHA256",
+                "MaxDownloadSizeInBytes": 227483806,
+                "PackageDownloadUris": null
+              },
+              {
+                "PackageFullName": "SpotifyAB.SpotifyMusic_1.310.2586.0_arm64__zpdnekdrzrea0",
+                "PackageFamilyName": "SpotifyAB.SpotifyMusic_zpdnekdrzrea0",
+                "PackageId": "9b29e6d8-015a-37ef-ac32-d7be10b77c8e-Arm64",
+                "ContentId": "32ad62fb-8c4f-bf5a-b766-338fbaed9953",
+                "Architectures": [
+                  "arm64"
+                ],
+                "Version": "282806586048512",
+                "PackageFormat": "Appx",
+                "Hash": "fvJtdUwKwY9zw8ShaRSQHZu1FqhHqB4y/igEaK2hghk=",
+                "HashAlgorithm": "SHA256",
+                "MaxDownloadSizeInBytes": 217485187,
+                "PackageDownloadUris": null
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

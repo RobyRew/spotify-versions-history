@@ -20,6 +20,6 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["lib", "scripts", "test", "vitest.config.ts"],
+  "include": ["lib", "scripts", "sensors", "test", "vitest.config.ts"],
   "exclude": ["node_modules", "site", "scripts/legacy"]
 }

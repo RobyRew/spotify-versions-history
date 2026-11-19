@@ -1,0 +1,78 @@
+Package: spotify-client
+Architecture: amd64
+Version: 1:1.3.4.258.gc60b10b0946a
+Priority: optional
+Section: sound
+Maintainer: Spotify <tux.com>
+Depends: libc6 (>= 2.39), libasound2, libatk-bridge2.0-0, libatomic1, libgbm1, libglib2.0-0, libgtk-3-0, libnss3, libxshmfence1, libxss1, libxtst6, xdg-utils, libayatana-appindicator3-1
+Recommends: libavcodec61 | libavcodec60 | libavcodec58, libavformat61 | libavformat60 | libavformat58
+Suggests: libnotify4
+Filename: pool/non-free/s/spotify-client/spotify-client_1.3.4.258.gc60b10b0946a_amd64.deb
+SHA512: ad2198da6be2f3286a661d0315c124cb94c51084fabf630e34a296f3683599f1d8067e95512c150ed04b3c86526c8a0cff9b93584b39a145befaf6c478deb883
+Homepage: https://www.spotify.com
+Size: 179241028
+SHA256: 20f327441d11b202c82e65b69ec990ef631eb66605da15f41076c049acb718e4
+SHA1: 29412384bbab5f097a4a94b478fc845d528b65df
+MD5sum: dd1522ce53b4d15e031a76075d3e859b
+Description: Spotify streaming music client
+License: https://www.spotify.com/legal/end-user-agreement
+
+Package: spotify-client-0.9.17
+Architecture: amd64
+Version: 0.9.17.8.gd06432d.31-1
+Priority: extra
+Section: sound
+Source: spotify
+Maintainer: Spotify <libspotify@spotify.com>
+Installed-Size: 139688
+Provides: spotify-client, spotify-client-gnome-support, spotify-client-qt
+Depends: libasound2 (>= 1.0.14), libc6 (>= 2.6), libqt4-dbus (>= 4.5.0), libqtcore4 (>= 4.5.0), libqtgui4 (>= 4.5.0), libqt4-network (>= 4.5.0), libstdc++6 (>= 4.0.0), libxss1 (>= 1:1.2.0), usbutils, libssl1.0.0, libnspr4-0d, libgconf2-4, libgtk2.0-0, libnss3-1d, libglib2.0-0, xdg-utils (>= 1.0.2), dbus-x11, libudev0 | libudev1
+Recommends: libavcodec53 | libavcodec52 | libavcodec-extra-53 | libavcodec-extra-52, libavformat53 | libavformat52 | libavformat-extra-53 | libavformat-extra-52, libnotify4
+Conflicts: spotify-client, spotify-client-gnome-support (<< 1:0.8.0), spotify-client-qt (<< 1:0.8.0)
+Replaces: spotify-client-gnome-support (<< 1:0.8.0), spotify-client-qt (<< 1:0.8.0)
+Filename: pool/non-free/s/spotify/spotify-client-0.9.17_0.9.17.8.gd06432d.31-1_amd64.deb
+SHA512: 3369d78b18f84c28cc8fbc94646ac2ffad40a3b531ddb21b10a3d34eaab1ad98dac83df29322b9d62257ebde114b91d56376669fbb3bed850f0a2af816ba8e88
+Size: 42700518
+SHA256: 0cec1535d1c656452c6358dc244e013c761c9a329b4536ce853b0a007ce73cc6
+SHA1: 99e7afbafc2cb83b601d8b595589daa1ec77a304
+MD5sum: 69a320368ded33cfcc4e3bb4cc71575c
+Description: Spotify desktop client
+
+Package: spotify-client-gnome-support
+Architecture: all
+Version: 1:0.9.17.1.g9b85d43.7-1
+Priority: extra
+Section: sound
+Source: spotify
+Maintainer: Spotify <libspotify@spotify.com>
+Installed-Size: 2
+Depends: spotify-client
+Filename: pool/non-free/s/spotify/spotify-client-gnome-support_0.9.17.1.g9b85d43.7-1_all.deb
+SHA512: 452854156e810505c664c67571a27af300bbb22a8929623fef1fcd11c2cdb13b0b1466decbe52442d291a3557795b48c8f33c8dab058f916b2ee891c1d1b6ac1
+Size: 2258
+SHA256: 0374f26db6c770b7d10929d07e923d6da956ddf772cba9864cf0332818ae494f
+SHA1: 824acf11eeaae274a04227a20e97e7aa711b4335
+MD5sum: 31090d231eca99146ccb658c11705e51
+Description: Transitional package for spotify-client
+ This transitional package is provided for a smooth transition from the previous
+ spotify-client-gnome-support package.  It may safely be removed after installation.
+
+Package: spotify-client-qt
+Architecture: all
+Version: 1:0.9.17.1.g9b85d43.7-1
+Priority: extra
+Section: sound
+Source: spotify
+Maintainer: Spotify <libspotify@spotify.com>
+Installed-Size: 2
+Depends: spotify-client
+Filename: pool/non-free/s/spotify/spotify-client-qt_0.9.17.1.g9b85d43.7-1_all.deb
+SHA512: a9a2dc4c0a84d7843eae6178260269816a77ef36608b5296686d4bb4acb029fe542404167e373ed8eaf7a13379d56d45055743b029f30edc0a0cf1c2623d00a2
+Size: 2240
+SHA256: ffd4f48ada8b148ad5902368a6e8e9ac4580a500484b134c03026b00fde53b1a
+SHA1: 99183d81f7db75a72e4250dc5400e124d066f69c
+MD5sum: d09666412c80c7de6ce4a623b6293f2b
+Description: Transitional package for spotify-client
+ This transitional package is provided for a smooth transition from the previous
+ spotify-client-qt package.  It may safely be removed after installation.
+
