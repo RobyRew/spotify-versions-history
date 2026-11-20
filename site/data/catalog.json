@@ -1,13 +1,87 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-14T00:39:00.217Z",
+  "updatedAt": "2026-11-20T06:31:55.335Z",
   "testedVersion": "1.2.93.667.g7b5cc0ce",
   "upstream": [
     "https://raw.githubusercontent.com/LoaderSpot/table/main/table/versions.json",
     "https://raw.githubusercontent.com/LoaderSpot/LoaderSpot/main/versions.json",
-    "https://repository.spotify.com/dists/stable/non-free/binary-amd64/Packages"
+    "https://repository.spotify.com/dists/stable/non-free/binary-amd64/Packages",
+    "https://repository.spotify.com/dists/stable/non-free/binary-arm64/Packages",
+    "https://repository.spotify.com/dists/stable/non-free/binary-i386/Packages"
   ],
   "entries": [
+    {
+      "id": "1.3.11.2638.g50771d5305a2-windows-x64",
+      "version": "1.3.11.2638",
+      "fullVersion": "1.3.11.2638.g50771d5305a2",
+      "platform": "windows",
+      "architecture": "x64",
+      "format": "exe",
+      "date": "2026-11-20",
+      "size": 161571888,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.11.2638.g50771d5305a2-x64.exe",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
+    {
+      "id": "1.3.11.2638.g50771d5305a2-windows-arm64",
+      "version": "1.3.11.2638",
+      "fullVersion": "1.3.11.2638.g50771d5305a2",
+      "platform": "windows",
+      "architecture": "arm64",
+      "format": "exe",
+      "date": "2026-11-20",
+      "size": 146238056,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify_installer-1.3.11.2638.g50771d5305a2-arm64.exe",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
+    {
+      "id": "1.3.11.2638.g50771d5305a2-macos-x64",
+      "version": "1.3.11.2638",
+      "fullVersion": "1.3.11.2638.g50771d5305a2",
+      "platform": "macos",
+      "architecture": "x64",
+      "format": "tbz",
+      "date": "2026-11-20",
+      "size": 194734044,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.11.2638.g50771d5305a2-x86_64.tbz",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
+    {
+      "id": "1.3.11.2638.g50771d5305a2-macos-arm64",
+      "version": "1.3.11.2638",
+      "fullVersion": "1.3.11.2638.g50771d5305a2",
+      "platform": "macos",
+      "architecture": "arm64",
+      "format": "tbz",
+      "date": "2026-11-20",
+      "size": 176285871,
+      "tested": false,
+      "sources": [
+        {
+          "url": "https://loadspot.amd64fox1.workers.dev/download/spotify-autoupdate-1.3.11.2638.g50771d5305a2-arm64.tbz",
+          "kind": "mirror",
+          "label": "LoadSpot mirror"
+        }
+      ]
+    },
     {
       "id": "1.3.10.2586.g81a118a22460-windows-x64",
       "version": "1.3.10.2586",
