@@ -1,4 +1,5 @@
 import { isDigestHour, madrid, tr, type BotModule, type Lang, type Reply, type TickMessage } from '@robyrew/bot-sdk'
+import { openSpotify, parseSpotifyUrl } from './open.ts'
 
 export interface CatalogEntry {
   version: string
@@ -21,9 +22,9 @@ const EVERY = ['weekly', 'monthly', 'quarterly'] as const
 type Every = (typeof EVERY)[number]
 
 const help: Record<Lang, string> = {
-  en: 'Search desktop build versions. /spotify 1.2.96 — follow with /spotify follow windows arm64 weekly. Digests are weekly, monthly, or every 3 months, at 08:00 Madrid. No audio and no installers.',
-  ro: 'Caută versiuni desktop. /spotify 1.2.96 — abonare cu /spotify follow windows arm64 weekly. Rezumatul e săptămânal, lunar sau la 3 luni, la 08:00 Madrid. Fără audio și fără instalatoare.',
-  es: 'Busca versiones de escritorio. /spotify 1.2.96 — suscripción con /spotify follow windows arm64 weekly. El resumen es semanal, mensual o cada 3 meses, a las 08:00 en Madrid. Sin audio y sin instaladores.',
+  en: 'Send an open.spotify.com link for the title, artwork, playlist rows, and the 30-second preview Spotify publishes. /spotify 1.2.96 still searches desktop builds. The full song file is not downloaded.',
+  ro: 'Trimite un link open.spotify.com pentru titlu, copertă, rândurile playlistului și previzualizarea de 30 de secunde publicată de Spotify. /spotify 1.2.96 caută în continuare versiuni desktop. Fișierul întreg al piesei nu se descarcă.',
+  es: 'Envía un enlace de open.spotify.com para el título, la portada, las filas de la playlist y la previa de 30 segundos que publica Spotify. /spotify 1.2.96 sigue buscando versiones de escritorio. El archivo completo de la canción no se descarga.',
 }
 
 let loadCatalog: () => Promise<CatalogFile> = async () => {
@@ -83,6 +84,14 @@ export const spotifyModule: BotModule = {
   menu: (lang) => tr(lang, { en: 'Spotify versions', ro: 'Versiuni Spotify', es: 'Versiones de Spotify' }),
   help: (lang) => help[lang],
   async handle(input, api) {
+    const spotifyLink = parseSpotifyUrl(`${input.args}\n${input.text}`)
+    if (spotifyLink) {
+      try {
+        return await openSpotify(spotifyLink)
+      } catch {
+        return { kind: 'text', text: tr(input.lang, { en: 'Spotify is offline for that link.', ro: 'Spotify nu a răspuns pentru linkul ăsta.', es: 'Spotify no ha respondido a ese enlace.' }) }
+      }
+    }
     const args = input.args.trim()
     if (args.startsWith('follow')) {
       const [, platform, architecture, every] = args.split(/\s+/)
