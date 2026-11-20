@@ -10,6 +10,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { loadTrust } from '../lib/trust.ts';
+import { compareVersions } from '../lib/versions.ts';
 import { SENSORS } from './registry.ts';
 import type { Detection } from './types.ts';
 
@@ -42,6 +43,18 @@ async function readState(path: string): Promise<StateFile | null> {
   }
 }
 
+/** Every build when there are a few; counts per platform and the newest version for a whole catalog. */
+function summarize(detections: Detection[]): string {
+  const label = (d: Detection) => `${d.platform}/${d.arch}/${d.format}`;
+  if (detections.length <= 8) {
+    return `${detections.length} build(s)${detections.length ? `: ${detections.map(d => `${label(d)} ${d.fullVersion ?? d.version}`).join(', ')}` : ''}`;
+  }
+  const counts = new Map<string, number>();
+  for (const detection of detections) counts.set(label(detection), (counts.get(label(detection)) ?? 0) + 1);
+  const newest = detections.reduce((best, d) => compareVersions(d.version, best.version) > 0 ? d : best);
+  return `${detections.length} builds (${[...counts].map(([kind, count]) => `${kind} ${count}`).join(', ')}); newest ${newest.fullVersion ?? newest.version}`;
+}
+
 const results: { sensor: string; ok: boolean; detections?: Detection[]; notes?: string[]; error?: string }[] = [];
 for (const sensor of SENSORS) {
   if (only && !only.has(sensor.id)) continue;
@@ -50,8 +63,7 @@ for (const sensor of SENSORS) {
   try {
     const result = await sensor.detect({ fetch, now, previous: previous?.reading ?? null, trust, log: message => console.error(message) });
     results.push({ sensor: sensor.id, ok: true, detections: result.detections, notes: result.notes });
-    const builds = result.detections.map(d => `${d.platform}/${d.arch}/${d.format} ${d.fullVersion ?? d.version}`).join(', ');
-    console.log(`${sensor.id}: ${result.detections.length} build(s)${builds ? `: ${builds}` : ''}`);
+    console.log(`${sensor.id}: ${summarize(result.detections)}`);
     for (const note of result.notes) console.log(`  note: ${note}`);
     const changed = JSON.stringify(previous?.reading) !== JSON.stringify(result.state);
     if (values.write && changed) {
