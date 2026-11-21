@@ -242,7 +242,10 @@ async function storeChecks(context: Context, detection: Detection, report: Artif
     const roots = context.roots.store;
     report.checks.push(...verifyAppxSignature(parts.signature, parts, context.trust, { roots: roots.certificates, timestampRoots: roots.timestampCertificates }));
     if (context.host === 'win32') report.checks.push(...await verifyWindowsNative(path, context.trust, 'appx'));
-    else report.checks.push(...await osslsigncodeVerify(path, roots.caFile, roots.tsaCaFile));
+    // osslsigncode's OpenSSL chain check stops at the critical Application Policies extension
+    // (1.3.6.1.4.1.311.21.10) of every Store signing certificate ("unhandled critical extension",
+    // run 44891684343), so for packages the second implementation is the Windows host's.
+    else report.checks.push(skip('osslsigncode.verify', 'osslsigncode', 'not run on Store packages: OpenSSL refuses the critical Application Policies extension of Microsoft\'s Store signing certificates; the Windows host checks the package natively'));
   } finally {
     if (!context.keepFiles) await rm(path, { force: true });
   }

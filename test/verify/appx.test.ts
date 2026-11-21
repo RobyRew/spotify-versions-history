@@ -157,6 +157,14 @@ describe('Store package signature', () => {
     expect(checks['appx.content-digests']?.detail).toMatch(/AXPC: signed 856b2bbc06c48c83/);
   });
 
+  it('accepts a 2022 signature: a three-day signer certificate checked at its timestamp, a non-critical time-stamping usage', async () => {
+    const old = new Uint8Array(await readFile(here('../../testdata/verify/appx/signature-SpotifyMusic_1.192.647.0_x86.p7x')));
+    const checks = byId(verifyAppxSignature(old, parts, anchors, pinned, NOW));
+    expect(checks['appx.timestamp']).toMatchObject({ status: 'pass', data: { time: '2022-08-22T08:57:33.441Z' } });
+    expect(checks['appx.chain']).toMatchObject({ status: 'pass', data: { at: '2022-08-22T08:57:33.441Z' } });
+    expect(checks['appx.signer']?.status).toBe('pass');
+  });
+
   it('reads the five signed digest records', () => {
     const at = Buffer.from(p7x).indexOf('APPX');
     const records = appxDigestRecords(p7x.subarray(at, at + 4 + 5 * 36));

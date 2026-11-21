@@ -784,8 +784,11 @@ function pathProblem(chain: readonly Certificate[], request: ChainRequest): stri
       if (certificate.basicConstraints?.ca) return `${name} signs as a leaf but is a CA certificate`;
       if (certificate.keyUsage && !certificate.keyUsage.has('digitalSignature')) return `${name}: key usage ${[...certificate.keyUsage].join(', ')} lacks digitalSignature`;
       if (!usages || !usages.includes(request.purpose)) return `${name}: expected the extended key usage ${request.purpose}, found ${usages?.join(', ') ?? 'none'}`;
-      if (request.purpose === OID.timeStamping && (usages.length !== 1 || !certificate.extendedKeyUsage?.critical)) {
-        return `${name}: RFC 3161 requires one critical extended key usage, id-kp-timeStamping; found ${usages.join(', ')}${certificate.extendedKeyUsage?.critical ? '' : ' (not critical)'}`;
+      // RFC 3161 2.3 also asks for the extension to be critical. Microsoft's Time-Stamp Service
+      // certificates of 2022 (in the Store's 1.192.647.0 x86 package) leave it non-critical and Windows
+      // accepts them; this check reads and enforces the usage itself, so only its content is required.
+      if (request.purpose === OID.timeStamping && usages.length !== 1) {
+        return `${name}: RFC 3161 requires id-kp-timeStamping as the only extended key usage; found ${usages.join(', ')}`;
       }
     } else if (usages && !usages.includes(request.purpose) && !usages.includes(OID.anyExtendedKeyUsage)) {
       return `${name} restricts its extended key usage to ${usages.join(', ')}, without ${request.purpose}`;

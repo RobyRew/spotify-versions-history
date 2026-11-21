@@ -28,7 +28,7 @@ the next run captures the new one.
 | Platform | In-process checks (every host) | Native tools | Second implementation |
 | --- | --- | --- | --- |
 | Windows installers (`.exe`) | PE image digest, signer signature, signer subject and issuer, chain to the pinned root at the signing time, RFC 3161 timestamp, machine type and ProductVersion | `Get-AuthenticodeSignature`, `signtool verify /pa` (Windows) | `osslsigncode verify` (Linux) |
-| Microsoft Store packages | the five digests the package signature covers (AXPC and AXCD over the zip structure, AXCT, AXBM, AXCI), every 64 KiB block of every file against `AppxBlockMap.xml`, the `AppxManifest.xml` identity, signer, chain, timestamp, and the SHA-256 that displaycatalog and FE3 state | `Get-AuthenticodeSignature`, `signtool verify /pa` (Windows) | `osslsigncode verify` (Linux) |
+| Microsoft Store packages | the five digests the package signature covers (AXPC and AXCD over the zip structure, AXCT, AXBM, AXCI), every 64 KiB block of every file against `AppxBlockMap.xml`, the `AppxManifest.xml` identity, signer, chain, timestamp, and the SHA-256 that displaycatalog and FE3 state | `Get-AuthenticodeSignature`, `signtool verify /pa` (Windows) | the Windows host's tools; `osslsigncode` cannot check these (its OpenSSL stops at the critical Application Policies extension) |
 | macOS (`.dmg`) | digest against the CDN's MD5 ETag | `codesign --verify --deep --strict`, `codesign -dvvv` (identifier, Team ID, authorities, hardened runtime), `spctl --assess`, `stapler validate` on the image, `Info.plist` version (macOS) | — |
 | Linux apt (`.deb`) | `InRelease` OpenPGP signature by the pinned key, valid when made and now; `Packages` SHA-256 listed in `InRelease`; `.deb` SHA-256 listed in `Packages`; the `control` file's Package, Version and Architecture | — | `gpgv` (Linux) |
 | Linux snap (`.snap`) | the snap-revision assertion signed by Canonical's store key, that key's account-key assertion signed by snapd's root key, the root's self-signature and pinned id, the keys' validity windows, the file's SHA3-384 and size, snap-id, developer-id and the snap-declaration's name | — | — |
@@ -41,6 +41,11 @@ Three facts the real files showed, which the checks rely on:
   (1.3.6.1.4.1.311.21.10) that repeats their extended key usage. The chain check requires the code
   signing purpose in it, as CryptoAPI does. The intermediate CA rotates (Marketplace CA G 023 signed
   1.253.440.0, G 026 signed 1.310.2586.0), so only the root and the publisher are pinned.
+- Microsoft's Time-Stamp Service certificates of 2022 (in the Store's 1.192.647.0 x86 package) do not
+  mark their time-stamping extended key usage critical, as RFC 3161 asks. The check requires
+  id-kp-timeStamping as the only usage and enforces it itself, so it accepts them, as Windows does.
+  That package's signer certificate was valid for three days in August 2022; the chain is checked at
+  the timestamp's time.
 - AXCD is the SHA-256 of the central directory without the signature file's record, followed by the
   ZIP64 end records rewritten as if that file were absent. This definition was matched against the
   signed values of two real packages.
