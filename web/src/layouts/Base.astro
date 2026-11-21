@@ -1,0 +1,113 @@
+---
+import SiteHeader from '@robyrew/ui/components/SiteHeader.astro';
+import { themeBootstrap } from '@robyrew/web-config/theme-bootstrap';
+import '../styles/global.css';
+
+type Section = 'home' | 'versions' | 'probes' | 'api' | 'about' | 'release';
+
+interface Props {
+  title?: string;
+  description?: string;
+  section: Section;
+  /** Keep the page out of search engines. */
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = 'Every official Spotify client build, with its download links and whether each file was checked against its publisher’s signature.',
+  section,
+  noindex = false,
+} = Astro.props;
+const pageTitle = title ? `${title} · Spotify Versions` : 'Spotify Versions — every official Spotify build';
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const links = [
+  { label: 'Versions', href: '/versions', current: section === 'versions' || section === 'release', icon: 'history' as const },
+  { label: 'Probes', href: '/probes', current: section === 'probes', icon: 'activity' as const },
+  { label: 'API', href: '/api', current: section === 'api', icon: 'braces' as const },
+  { label: 'About', href: '/about', current: section === 'about', icon: 'info' as const },
+];
+const year = new Date().getUTCFullYear();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f2f2" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#090909" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/json" title="API v2: releases" href="/api/v2/releases" />
+    <!-- House pre-paint theme stamp; its CSP hash is computed in astro.config.mjs. -->
+    <script is:inline set:html={themeBootstrap} />
+  </head>
+  <body data-section={section}>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <SiteHeader
+      name="Spotify Versions"
+      sub="archive"
+      mark="history"
+      links={links}
+      actions={[{ label: 'Source', href: 'https://github.com/RobyRew/spotify-versions-history', icon: 'code' }]}
+    />
+    <main id="main" class="site-main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <p>
+          Not affiliated with or endorsed by Spotify. The archive lists Spotify’s own, unmodified builds only, served from
+          Spotify, the store that distributes them or a mirror. Files it captured are checked against their publisher’s
+          signature; the others say they are not checked yet.
+        </p>
+        <p class="site-footer__links">
+          <a href="/about">How it works</a>
+          <a href="/api">API</a>
+          <a href="https://github.com/RobyRew/spotify-versions-history">Source</a>
+          <span>© {year} RobyRew</span>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--hair);
+    background: var(--ground-2);
+  }
+  .site-footer__inner {
+    max-width: var(--site-max);
+    margin-inline: auto;
+    padding: 1.5rem var(--gutter) calc(1.5rem + env(safe-area-inset-bottom));
+    color: var(--ink-3);
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+  .site-footer__inner p {
+    margin: 0 0 0.6rem;
+    max-width: 52rem;
+  }
+  .site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+  }
+  .site-footer__links a {
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .site-footer__links a:hover {
+    color: var(--accent);
+  }
+</style>

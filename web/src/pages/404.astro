@@ -1,0 +1,11 @@
+---
+import EmptyState from '@robyrew/ui/components/EmptyState.astro';
+import Base from '../layouts/Base.astro';
+---
+
+<Base section="home" title="Not found" noindex>
+  <EmptyState title="Nothing here" icon="search" level={2} bordered>
+    <p>That page is not part of the archive.</p>
+    <a class="rw-btn rw-btn--sm" href="/versions">All versions</a>
+  </EmptyState>
+</Base>

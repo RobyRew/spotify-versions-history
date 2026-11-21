@@ -1,0 +1,73 @@
+---
+import Callout from '@robyrew/ui/components/Callout.astro';
+import PageHead from '@robyrew/ui/components/PageHead.astro';
+import Base from '../layouts/Base.astro';
+
+const repository = 'https://github.com/RobyRew/spotify-versions-history';
+---
+
+<Base section="about" title="About" description="How the archive finds Spotify's builds, how it checks each file, which identities it pins, and what it never does.">
+  <PageHead eyebrow="About" title="How the archive works" icon="info"
+    lead="Probes read the same channels Spotify’s own clients and the stores use; every file is checked against its publisher’s signature before it is offered." />
+
+  <div class="prose">
+    <h2>Where builds come from</h2>
+    <ul>
+      <li><strong>Windows and macOS:</strong> Spotify’s permanent download URLs on download.scdn.co, which serve the current build, and Spotify’s own update service.</li>
+      <li><strong>Linux:</strong> Spotify’s signed apt repository and the Snap Store, which keeps every revision downloadable.</li>
+      <li><strong>Microsoft Store:</strong> the Store’s catalog and Windows Update’s delivery service, the way a Windows PC downloads the app.</li>
+      <li><strong>Older builds:</strong> amd64fox’s LoadSpot table and mirror, offered only when no Spotify or store link is alive.</li>
+      <li><strong>iPhone, iPad and Android:</strong> the App Store and Google Play listings; App Store files are tied to the account that downloads them and are not archived.</li>
+    </ul>
+
+    <h2 id="verify">How a file is checked</h2>
+    <p>
+      Each file is downloaded and hashed in one pass, compared with every hash its channel states, and checked against its
+      platform’s signature: Authenticode for Windows installers, Microsoft’s package signature for Store packages (with
+      every block of every file it contains), codesign, Gatekeeper and the stapled notarization ticket for macOS, the signed
+      apt index for Debian packages, and Canonical’s signed assertions for snaps. The archive’s own code checks each one,
+      and the platform’s tools check it again on Linux, macOS and Windows machines; all of them must agree on the bytes.
+    </p>
+    <p>
+      The identities a build must carry — Spotify’s Windows signer, Apple team, apt key and Store publisher, and the root
+      certificates they chain to — are written down in the repository with where and when they were read. A changed
+      identity fails the checks until someone reviews it. The details, and the commands to repeat every check by hand, are
+      in <a href={`${repository}/blob/main/docs/VERIFICATION.md`}>docs/VERIFICATION.md</a>.
+    </p>
+
+    <h2>What it never does</h2>
+    <Callout tone="warn" title="Official, unmodified builds only">
+      The archive does not host or link modified clients, patches or cracks, and is not affiliated with Spotify. A file is
+      offered only as its publisher signed it.
+    </Callout>
+
+    <h2>Questions and removal requests</h2>
+    <p>
+      Open an issue in the <a href={`${repository}/issues`}>repository</a>. A file named in a request is disabled while it is
+      reviewed; its record and hashes stay.
+    </p>
+  </div>
+</Base>
+
+<style>
+  .prose {
+    max-width: 46rem;
+    margin-top: 1.5rem;
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+  .prose h2 {
+    margin: 2rem 0 0.6rem;
+    color: var(--ink);
+    font-size: 1.15rem;
+  }
+  .prose ul {
+    padding-left: 1.1rem;
+  }
+  .prose li {
+    margin: 0.35rem 0;
+  }
+  .prose a {
+    color: var(--accent);
+  }
+</style>

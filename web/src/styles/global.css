@@ -1,0 +1,100 @@
+@import 'tailwindcss';
+@import '@robyrew/web-config/theme.css';
+
+/* Content is opaque; glass is only the floating header and its menu. */
+:root {
+  --site-max: 76rem;
+  --gutter: 1rem;
+  /* Measured by SiteHeader; this is the first-paint estimate. */
+  --site-head: 4.3rem;
+}
+@media (min-width: 640px) {
+  :root {
+    --gutter: 1.5rem;
+  }
+}
+
+html {
+  background: var(--ground);
+  scroll-padding-top: calc(var(--site-head) + 1rem);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  margin: 0;
+  background:
+    radial-gradient(1100px 620px at 12% -12%, rgb(var(--rim-rgb) / 0.08), transparent 62%),
+    radial-gradient(900px 520px at 105% 0%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 60%),
+    var(--ground);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--g-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.site-main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--site-max);
+  margin-inline: auto;
+  padding: 1.5rem var(--gutter) 4rem;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 100;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
+.mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A section heading with its quiet link on the right. */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2.5rem 0 0.9rem;
+}
+.section-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.section-head a {
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.section-head a:hover {
+  color: var(--accent);
+}
+
+/* Badges and sizes are single words to the reader; they never break across lines. */
+.rw-badge,
+.rw-table td.is-num {
+  white-space: nowrap;
+}
+
+/* Elements GSAP animates in start visible: with no script, reduced motion or a failed load nothing hides. */
+.reveal {
+  will-change: transform, opacity;
+}

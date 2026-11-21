@@ -1,0 +1,46 @@
+---
+import Icon from '@robyrew/ui/components/Icon.astro';
+import type { Arch, Platform } from '../../../lib/site/model.ts';
+import { ARCH_LABELS, PLATFORM_LABELS } from '../../../lib/site/model.ts';
+import { PLATFORM_ICONS } from '../lib/format.ts';
+
+interface Props {
+  platform: Platform;
+  arch?: Arch;
+  /** Only the mark, with the name for screen readers. */
+  compact?: boolean;
+}
+
+const { platform, arch, compact = false } = Astro.props;
+const name = arch ? `${PLATFORM_LABELS[platform]} ${ARCH_LABELS[arch]}` : PLATFORM_LABELS[platform];
+---
+
+{
+  compact ? (
+    <span class="platform platform--compact" title={name}>
+      <Icon name={PLATFORM_ICONS[platform]} size={16} label={name} />
+    </span>
+  ) : (
+    <span class="platform">
+      <Icon name={PLATFORM_ICONS[platform]} size={17} />
+      <span>{PLATFORM_LABELS[platform]}</span>
+      {arch && <span class="platform__arch">{ARCH_LABELS[arch]}</span>}
+    </span>
+  )
+}
+
+<style>
+  .platform {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+  }
+  .platform--compact {
+    color: var(--ink-2);
+  }
+  .platform__arch {
+    color: var(--ink-3);
+    font-size: 0.9em;
+  }
+</style>

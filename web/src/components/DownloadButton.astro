@@ -1,0 +1,44 @@
+---
+/**
+ * One artifact's download: the main half is the best link the site may offer, the menu lists every
+ * link with its health dot and what is known about it. Links known to be dead stay in the menu as
+ * disabled records, so nobody wonders where an old link went.
+ */
+import SplitButton from '@robyrew/ui/components/SplitButton.astro';
+import type { Mirror } from '@robyrew/ui';
+import type { ArtifactView } from '../../../lib/site/model.ts';
+import { formatBytes, platformName } from '../lib/format.ts';
+
+interface Props {
+  artifact: ArtifactView;
+  version: string;
+  size?: 'sm' | 'md' | 'lg';
+  primary?: boolean;
+  block?: boolean;
+}
+
+const { artifact, version, size = 'sm', primary = true, block = false } = Astro.props;
+const items: Mirror[] = artifact.sources.map(source => ({
+  label: source.label,
+  href: source.usable ? source.url : null,
+  disabled: !source.usable,
+  status: source.state,
+  hint: source.detail,
+  external: true,
+}));
+const name = platformName(artifact.platform, artifact.arch);
+---
+
+<SplitButton
+  label={artifact.best ? 'Download' : 'No live link'}
+  href={artifact.best?.url ?? null}
+  icon="download"
+  mainLabel={`Download ${version} for ${name}${artifact.size ? `, ${formatBytes(artifact.size)}` : ''}`}
+  title={artifact.sha256 ? `SHA-256 ${artifact.sha256}` : undefined}
+  items={items.length ? items : [{ label: 'No link recorded', disabled: true }]}
+  menuLabel={`All links for ${name}`}
+  menuTitle={`${version} · ${name}`}
+  primary={primary && artifact.best !== null}
+  size={size}
+  block={block}
+/>

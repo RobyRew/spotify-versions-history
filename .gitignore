@@ -8,3 +8,4 @@ site/var/
 *.sqlite-shm
 *.sqlite-wal
 dist-api/
+web/.data/

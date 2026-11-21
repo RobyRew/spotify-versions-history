@@ -1,0 +1,105 @@
+---
+import ActiveFilters from '@robyrew/ui/components/ActiveFilters.astro';
+import ChipSelect from '@robyrew/ui/components/ChipSelect.astro';
+import EmptyState from '@robyrew/ui/components/EmptyState.astro';
+import FilterChip from '@robyrew/ui/components/FilterChip.astro';
+import LoadMore from '@robyrew/ui/components/LoadMore.astro';
+import PageHead from '@robyrew/ui/components/PageHead.astro';
+import SearchField from '@robyrew/ui/components/SearchField.astro';
+import Base from '../layouts/Base.astro';
+import ReleaseRows from '../components/ReleaseRows.astro';
+import { ARCH_LABELS, filterReleases, page, PLATFORM_LABELS, type Arch, type Platform } from '../../../lib/site/model.ts';
+import { siteData } from '../lib/data.ts';
+import { withParam } from '../lib/format.ts';
+
+const PAGE_SIZE = 50;
+const data = await siteData();
+const params = Astro.url.searchParams;
+const platforms = [...new Set(data.releases.flatMap(release => release.platforms))];
+const arches = [...new Set(data.releases.flatMap(release => release.artifacts.map(artifact => artifact.arch)))];
+const platform = platforms.includes(params.get('platform') as Platform) ? (params.get('platform') as Platform) : null;
+const arch = arches.includes(params.get('arch') as Arch) ? (params.get('arch') as Arch) : null;
+const sort = params.get('sort') === 'oldest' ? 'oldest' : 'newest';
+const q = (params.get('q') ?? '').slice(0, 64);
+const signed = params.get('signed') === '1';
+const live = params.get('live') === '1';
+
+const matches = filterReleases(data.releases, { q, platform, arch, sort, signed, downloadable: live });
+const { items, next } = page(matches, params.get('cursor'), PAGE_SIZE);
+const nextHref = next ? (() => { const url = new URL(Astro.url); url.searchParams.set('cursor', next); return `${url.pathname}${url.search}`; })() : null;
+const shown = Math.min(matches.length, Number(params.get('cursor') ?? 0) + items.length);
+
+const active = [
+  ...(q ? [{ label: `“${q}”`, href: withParam(Astro.url, 'q', null) }] : []),
+  ...(platform ? [{ label: PLATFORM_LABELS[platform], href: withParam(Astro.url, 'platform', null) }] : []),
+  ...(arch ? [{ label: ARCH_LABELS[arch], href: withParam(Astro.url, 'arch', null) }] : []),
+  ...(signed ? [{ label: 'Signed', href: withParam(Astro.url, 'signed', null) }] : []),
+  ...(live ? [{ label: 'Live links', href: withParam(Astro.url, 'live', null) }] : []),
+];
+---
+
+<Base section="versions" title="Versions" description={`${data.releases.length} Spotify desktop releases, newest first, with their platforms and download links.`}>
+  <PageHead
+    eyebrow="Spotify for desktop"
+    title="Versions"
+    lead={`${data.releases.length} releases since ${data.releases.at(-1)?.version ?? '—'}, with every file the archive knows of for each.`}
+    icon="history"
+  />
+
+  <form class="filters" method="get" action="/versions" role="search" aria-label="Filter versions">
+    <SearchField label="Search versions" name="q" value={q} placeholder="1.3.10 or a build hash" shortcut="/" />
+    <ChipSelect label="Platform" name="platform" icon="monitor" autosubmit value={platform ?? ''}
+      options={[['', 'All platforms'], ...platforms.map(value => [value, PLATFORM_LABELS[value]] as [string, string])]} />
+    <ChipSelect label="Architecture" name="arch" icon="cpu" autosubmit value={arch ?? ''}
+      options={[['', 'All architectures'], ...arches.map(value => [value, ARCH_LABELS[value]] as [string, string])]} />
+    <FilterChip label="Signed" name="signed" value="1" checked={signed} icon="shield" autosubmit />
+    <FilterChip label="Live links" name="live" value="1" checked={live} icon="download" autosubmit />
+    <ChipSelect label="Sort" name="sort" icon="sort" neutral autosubmit value={sort}
+      options={[['newest', 'Newest first'], ['oldest', 'Oldest first']]} />
+    <noscript><button class="rw-btn rw-btn--sm" type="submit">Apply</button></noscript>
+  </form>
+
+  {active.length > 0 && <ActiveFilters filters={active} clear="/versions" />}
+
+  <p class="count" aria-live="polite">
+    {matches.length === data.releases.length ? `${matches.length} releases` : `${matches.length} of ${data.releases.length} releases`}
+  </p>
+
+  {
+    matches.length === 0 ? (
+      <EmptyState title="No release matches" icon="search" bordered>
+        <p>Try another version number, or clear the filters.</p>
+        <a class="rw-btn rw-btn--sm" href="/versions">Clear filters</a>
+      </EmptyState>
+    ) : (
+      <>
+        <div class="rw-table-wrap">
+          <table class="rw-table rw-table--stack" id="releases">
+            <thead><tr><th>Version</th><th>Released</th><th>Platforms</th><th>Checked</th><th class="is-num">Live links</th></tr></thead>
+            <tbody><ReleaseRows releases={items} /></tbody>
+          </table>
+        </div>
+        <LoadMore href={nextHref} target="#releases tbody" items="tr" status={`Showing ${shown} of ${matches.length}`} label="Load more releases" />
+      </>
+    )
+  }
+</Base>
+
+<style>
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 1.5rem 0 0.8rem;
+  }
+  .filters :global(.rw-search) {
+    flex: 1 1 16rem;
+    max-width: 24rem;
+  }
+  .count {
+    margin: 0.8rem 0;
+    color: var(--ink-3);
+    font-size: 0.9rem;
+  }
+</style>

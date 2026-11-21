@@ -1,0 +1,191 @@
+---
+import Callout from '@robyrew/ui/components/Callout.astro';
+import CopyField from '@robyrew/ui/components/CopyField.astro';
+import Disclosure from '@robyrew/ui/components/Disclosure.astro';
+import EmptyState from '@robyrew/ui/components/EmptyState.astro';
+import Icon from '@robyrew/ui/components/Icon.astro';
+import PageHead from '@robyrew/ui/components/PageHead.astro';
+import Base from '../../../layouts/Base.astro';
+import DownloadButton from '../../../components/DownloadButton.astro';
+import PlatformLabel from '../../../components/PlatformLabel.astro';
+import VerificationBadge from '../../../components/VerificationBadge.astro';
+import { findRelease, FORMAT_LABELS, neighbours } from '../../../../../lib/site/model.ts';
+import { siteData } from '../../../lib/data.ts';
+import { formatBytes, formatDate, platformName, shortHash } from '../../../lib/format.ts';
+
+const data = await siteData();
+const { product = '', version = '' } = Astro.params;
+const release = findRelease(data.releases, product, version);
+if (!release) Astro.response.status = 404;
+const around = release ? neighbours(data.releases, release) : { newer: null, older: null };
+const checked = release ? release.artifacts.filter(artifact => artifact.verification) : [];
+const platforms = release ? [...new Set(release.artifacts.map(artifact => artifact.platform))] : [];
+const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
+---
+
+<Base
+  section="release"
+  title={release ? `Spotify ${release.version}` : 'Release not found'}
+  description={release ? `Spotify ${release.fullVersion} for ${platforms.map(platform => platformName(platform)).join(', ')}: download links, SHA-256 and how each file was checked.` : undefined}
+  noindex={!release}
+>
+  {
+    !release ? (
+      <EmptyState title="No such release" icon="search" level={2} bordered>
+        <p>The archive has no {product} release {version}.</p>
+        <a class="rw-btn rw-btn--sm" href="/versions">All versions</a>
+      </EmptyState>
+    ) : (
+      <>
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/versions">Versions</a><span aria-hidden="true">/</span><span>{release.version}</span></nav>
+        <PageHead
+          eyebrow="Spotify for desktop"
+          title={release.version}
+          lead={`Build ${release.fullVersion}${release.date ? `, first listed ${formatDate(release.date)}` : ''}.`}
+        />
+        <p class="badges">
+          {release.signed && <span class="rw-badge rw-badge--ok"><Icon name="shield" size={13} />Signed build verified</span>}
+          {platforms.map(platform => <span class="rw-badge"><PlatformLabel platform={platform} /></span>)}
+        </p>
+
+        {checked.length === 0 && (
+          <Callout title="Listed, not yet checked by the archive" role="note">
+            The archive has not downloaded these files itself: the links come from Spotify’s CDN listings and the LoadSpot
+            mirror. Builds captured from now on are checked against their signatures; compare a file you download with the
+            commands below.
+          </Callout>
+        )}
+
+        <div class="section-head"><h2>Files</h2></div>
+        <div class="rw-table-wrap">
+          <table class="rw-table rw-table--stack">
+            <thead><tr><th>Platform</th><th>File</th><th class="is-num">Size</th><th>SHA-256</th><th>Checked</th><th class="is-actions"><span class="sr-only">Download</span></th></tr></thead>
+            <tbody>
+              {release.artifacts.map(artifact => (
+                <tr>
+                  <td data-label="Platform"><PlatformLabel platform={artifact.platform} arch={artifact.arch} /></td>
+                  <td data-label="File">{FORMAT_LABELS[artifact.format]}<small>{formatDate(artifact.date)}</small></td>
+                  <td data-label="Size" class="is-num">{formatBytes(artifact.size)}</td>
+                  <td data-label="SHA-256">{artifact.sha256 ? <CopyField value={artifact.sha256} display={shortHash(artifact.sha256)} /> : <span class="quiet">not captured</span>}</td>
+                  <td data-label="Checked"><VerificationBadge verification={artifact.verification} /></td>
+                  <td class="is-actions"><DownloadButton artifact={artifact} version={release.version} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section-head"><h2>Permanent links</h2></div>
+        <p class="quiet">Each file keeps one address here; it redirects to whichever live copy the archive trusts most at the time.</p>
+        <div class="permanent">
+          {release.artifacts.map(artifact => (
+            <div class="permanent__row"><PlatformLabel platform={artifact.platform} arch={artifact.arch} /><CopyField value={permanent(artifact.id)} truncate /></div>
+          ))}
+        </div>
+
+        <div class="section-head"><h2>Verify it yourself</h2><a href="/about#verify">Why these commands</a></div>
+        <div class="verify">
+          {platforms.includes('windows') && (
+            <Disclosure title="Windows" icon="windows" name="verify" open={platforms[0] === 'windows'}>
+              <p>In PowerShell, next to the downloaded installer. The status must be <strong>Valid</strong> and the signer <strong>CN=Spotify AB</strong>, serialNumber 556703-7485.</p>
+              <CopyField value="Get-AuthenticodeSignature .\SpotifyFullSetupX64.exe | Format-List Status, SignerCertificate, TimeStamperCertificate" />
+              <p>The file’s SHA-256, to compare with the table:</p>
+              <CopyField value="Get-FileHash .\SpotifyFullSetupX64.exe -Algorithm SHA256" />
+            </Disclosure>
+          )}
+          {platforms.includes('macos') && (
+            <Disclosure title="macOS" icon="apple" name="verify">
+              <p>On the app inside the image or the update archive. The team must be <strong>2FNC3A47ZF</strong> and Gatekeeper must say <strong>Notarized Developer ID</strong>.</p>
+              <CopyField value="codesign --verify --deep --strict --verbose=2 /Applications/Spotify.app && codesign -dvvv /Applications/Spotify.app 2>&1 | grep TeamIdentifier" />
+              <CopyField value="spctl --assess --type execute --verbose=4 /Applications/Spotify.app" />
+              <CopyField value="shasum -a 256 spotify-autoupdate-*.tbz" />
+            </Disclosure>
+          )}
+          {platforms.includes('linux') && (
+            <Disclosure title="Linux" icon="linux" name="verify">
+              <p>Spotify’s apt index is signed with key E1096BCB…5384CE82BA52C83A; the .deb’s SHA-256 is the one that index lists.</p>
+              <CopyField value="curl -sO https://repository.spotify.com/dists/stable/InRelease && gpgv --keyring ./spotify.gpg InRelease" />
+              <CopyField value="sha256sum spotify-client_*_amd64.deb" />
+            </Disclosure>
+          )}
+        </div>
+
+        <nav class="pager" aria-label="Other releases">
+          {around.newer ? <a class="rw-btn rw-btn--plain" href={`/v/${around.newer.product}/${around.newer.version}`}>← Newer: <span class="mono">{around.newer.version}</span></a> : <span />}
+          {around.older && <a class="rw-btn rw-btn--plain" href={`/v/${around.older.product}/${around.older.version}`}>Older: <span class="mono">{around.older.version}</span> →</a>}
+        </nav>
+      </>
+    )
+  }
+</Base>
+
+<style>
+  .crumbs {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.5rem 0 1rem;
+    color: var(--ink-3);
+    font-size: 0.9rem;
+  }
+  .crumbs a {
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .crumbs a:hover {
+    color: var(--accent);
+  }
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0.9rem 0 1.4rem;
+  }
+  td small {
+    display: block;
+    color: var(--ink-3);
+  }
+  .quiet {
+    color: var(--ink-3);
+  }
+  .permanent {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .permanent__row {
+    display: grid;
+    grid-template-columns: minmax(10rem, 14rem) 1fr;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  @media (max-width: 40rem) {
+    .permanent__row {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+    }
+  }
+  .verify {
+    display: grid;
+    gap: 0.6rem;
+  }
+  .verify p {
+    margin: 0.2rem 0 0.6rem;
+    color: var(--ink-2);
+  }
+  .verify :global(.rw-copy) {
+    margin-bottom: 0.5rem;
+  }
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2.5rem;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

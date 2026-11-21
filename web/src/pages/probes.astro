@@ -1,0 +1,143 @@
+---
+import Callout from '@robyrew/ui/components/Callout.astro';
+import Disclosure from '@robyrew/ui/components/Disclosure.astro';
+import PageHead from '@robyrew/ui/components/PageHead.astro';
+import StatusDot from '@robyrew/ui/components/StatusDot.astro';
+import Base from '../layouts/Base.astro';
+import PlatformLabel from '../components/PlatformLabel.astro';
+import { LEVEL_LABELS, type Arch, type Platform } from '../../../lib/site/model.ts';
+import { PROVIDERS, STATUSES } from '../../../sensors/health/schema.ts';
+import { siteData } from '../lib/data.ts';
+import { formatBytes, formatDateTime } from '../lib/format.ts';
+
+const data = await siteData();
+const report = data.verification;
+const health = data.health;
+const providerNames: Record<(typeof PROVIDERS)[number], string> = {
+  'spotify-current': 'Spotify’s current-build URLs (download.scdn.co)',
+  'spotify-signed': 'Spotify’s signed links (upgrade.scdn.co)',
+  'spotify-apt': 'Spotify’s apt repository',
+  snap: 'Snap Store revisions',
+  loadspot: 'LoadSpot mirror',
+  'github-archive': 'Archive copies on GitHub',
+  other: 'Other links (unsigned CDN paths)',
+};
+const statusWords: Record<(typeof STATUSES)[number], string> = {
+  ok: 'Answer', drift: 'Changed', gone: 'Gone', forbidden: 'Refused', expired: 'Expired', error: 'Error', 'not-checked': 'Not checked yet',
+};
+const total = (provider: (typeof PROVIDERS)[number]) => STATUSES.reduce((sum, status) => sum + (health?.summary[provider][status] ?? 0), 0);
+const providers = PROVIDERS.filter(provider => total(provider) > 0);
+---
+
+<Base section="probes" title="Probes" description="What the archive's probes saw last: the verification of the current builds and the health of every download link.">
+  <PageHead eyebrow="Status" title="Probes" icon="activity"
+    lead="The current builds are downloaded and checked every day on Linux, macOS and Windows; every download link is asked whether it still answers, on a schedule per source." />
+
+  <section id="verification">
+    <div class="section-head">
+      <h2>Verification of the current builds</h2>
+      {report && <span class="quiet">{formatDateTime(report.generatedAt)}</span>}
+    </div>
+    {
+      !report ? (
+        <Callout title="No verification report loaded" role="status">The daily verify run publishes one; until this site reads it, builds show as not checked.</Callout>
+      ) : (
+        <div class="rw-table-wrap">
+          <table class="rw-table rw-table--stack">
+            <thead><tr><th>Build</th><th>Platform</th><th>Level</th><th class="is-num">Size</th><th>Hosts</th><th class="is-num">Checks</th></tr></thead>
+            <tbody>
+              {report.artifacts.map(artifact => (
+                <tr>
+                  <td data-label="Build">
+                    <StatusDot status={artifact.ok ? (artifact.rotated ? 'warn' : 'ok') : 'danger'} label={artifact.ok ? (artifact.rotated ? 'Rotated upstream' : 'OK') : 'Not OK'} />
+                    <span class="mono build">{artifact.fullVersion ?? artifact.version}</span>
+                    {artifact.problems.length > 0 && (
+                      <Disclosure title={`${artifact.problems.length} problem(s)`} plain>
+                        <ul class="problems">{artifact.problems.map(problem => <li>{problem}</li>)}</ul>
+                      </Disclosure>
+                    )}
+                  </td>
+                  <td data-label="Platform"><PlatformLabel platform={artifact.platform as Platform} arch={artifact.arch as Arch} /><small>{artifact.format}</small></td>
+                  <td data-label="Level"><span class:list={['rw-badge', artifact.ok && artifact.level === 'signed' ? 'rw-badge--ok' : artifact.ok ? 'rw-badge--accent' : 'rw-badge--danger']}>{LEVEL_LABELS[artifact.level]}</span></td>
+                  <td data-label="Size" class="is-num">{formatBytes(artifact.size)}</td>
+                  <td data-label="Hosts">{artifact.hosts.join(', ')}</td>
+                  <td data-label="Checks" class="is-num">
+                    {artifact.checks.filter(check => check.status === 'pass').length} pass
+                    <small>{artifact.checks.filter(check => check.status === 'fail').length} fail · {artifact.checks.filter(check => check.status === 'skip').length} skip</small>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+  </section>
+
+  <section id="links">
+    <div class="section-head">
+      <h2>Download links</h2>
+      {health && <span class="quiet">{formatDateTime(health.generatedAt)}</span>}
+    </div>
+    {
+      !health ? (
+        <Callout title="No link-health file loaded" role="status">The six-hourly link check publishes one; until this site reads it, links show as not checked.</Callout>
+      ) : (
+        <div class="rw-table-wrap">
+          <table class="rw-table rw-table--stack">
+            <thead><tr><th>Source</th>{STATUSES.map(status => <th class="is-num">{statusWords[status]}</th>)}</tr></thead>
+            <tbody>
+              {providers.map(provider => (
+                <tr>
+                  <td data-label="Source">{providerNames[provider]}<small>{total(provider)} links</small></td>
+                  {STATUSES.map(status => <td data-label={statusWords[status]} class="is-num">{health.summary[provider][status] || '—'}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+    <p class="quiet note">
+      Spotify’s current-build URLs and apt pool are checked on every run, signed links by their token’s expiry, and the
+      mirror and other links once a week each, a seventh of them per day.
+    </p>
+  </section>
+
+  <Disclosure title="Where this page’s data comes from" plain>
+    <ul class="inputs">
+      <li>Ledger: {data.inputs.ledger}</li>
+      <li>Link health: {data.inputs.health}</li>
+      <li>Verification: {data.inputs.verification}</li>
+      <li>Loaded: {formatDateTime(data.loadedAt)}</li>
+    </ul>
+  </Disclosure>
+</Base>
+
+<style>
+  section {
+    margin-bottom: 1rem;
+  }
+  .quiet {
+    color: var(--ink-3);
+    font-size: 0.9rem;
+  }
+  .note {
+    margin-top: 0.8rem;
+  }
+  .build {
+    margin-left: 0.5rem;
+  }
+  td small {
+    display: block;
+    color: var(--ink-3);
+  }
+  .problems,
+  .inputs {
+    margin: 0.4rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--ink-2);
+    font-size: 0.88rem;
+    overflow-wrap: anywhere;
+  }
+</style>

@@ -1,0 +1,25 @@
+---
+/** What the archive's own checks found for one artifact: signed, a store's hash, failing, or not checked yet. */
+import Icon from '@robyrew/ui/components/Icon.astro';
+import type { VerificationView } from '../../../lib/site/model.ts';
+import { LEVEL_LABELS } from '../../../lib/site/model.ts';
+import { formatDateTime } from '../lib/format.ts';
+
+interface Props {
+  verification: VerificationView | null;
+}
+
+const { verification } = Astro.props;
+const failing = verification !== null && (!verification.ok || verification.matchesCapture === false);
+const tone = !verification ? '' : failing ? 'rw-badge--danger' : verification.level === 'signed' ? 'rw-badge--ok' : 'rw-badge--accent';
+const label = !verification ? 'Not checked yet' : failing ? 'Check failed' : LEVEL_LABELS[verification.level];
+const title = verification
+  ? `${verification.pass} checks passed, ${verification.fail} failed, ${verification.skip} skipped on ${verification.hosts.join(', ')} · ${formatDateTime(verification.generatedAt)}`
+  : 'The archive has not downloaded and checked this file itself; the links come from the listings.';
+---
+
+<span class:list={['rw-badge', tone]} title={title}>
+  {verification && !failing && <Icon name={verification.level === 'signed' ? 'shield' : 'check'} size={13} />}
+  {failing && <Icon name="alert" size={13} />}
+  {label}
+</span>

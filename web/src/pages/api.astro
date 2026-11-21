@@ -1,0 +1,68 @@
+---
+import CopyField from '@robyrew/ui/components/CopyField.astro';
+import PageHead from '@robyrew/ui/components/PageHead.astro';
+import Base from '../layouts/Base.astro';
+
+const base = new URL('/', Astro.site).href.replace(/\/$/, '');
+const endpoints = [
+  { path: '/api/v2/releases', what: 'Releases, newest first. Query: q (text), platform, arch, sort (newest | oldest), signed=1, live=1, limit (1–100, default 50), cursor (the next value of the previous page).' },
+  { path: '/api/v2/releases/desktop/1.3.10.2586', what: 'One release with its artifacts: size, SHA-256, every link with its state, the best link to offer, and the verification of the file when the archive checked it.' },
+  { path: '/api/v2/latest', what: 'The newest release of each platform and architecture that has a live link.' },
+  { path: '/api/v2/latest/windows/x64', what: 'The same for one platform and architecture.' },
+  { path: '/api/v2/verification', what: 'The latest merged verification report of the current builds (every check, per host).' },
+  { path: '/api/v2/health', what: 'The latest health of every download link.' },
+  { path: '/dl/1.3.10.2586.g81a118a22460-windows-x64-exe', what: 'A permanent link to one file: a redirect to the best live copy.' },
+];
+---
+
+<Base section="api" title="API" description="The archive's public API: releases, artifacts, download links, verification results and link health as JSON.">
+  <PageHead eyebrow="For developers" title="API v2" icon="braces"
+    lead="Every answer is JSON, cacheable (ETag and If-None-Match), open to any origin and free of keys. Read endpoints only; the archive's own data, unchanged." />
+
+  <div class="endpoints">
+    {
+      endpoints.map(endpoint => (
+        <article class="rw-card endpoint">
+          <h2><span class="rw-badge rw-badge--accent">GET</span><span class="mono">{endpoint.path}</span></h2>
+          <p>{endpoint.what}</p>
+          <CopyField value={`curl -s ${base}${endpoint.path}`} truncate />
+        </article>
+      ))
+    }
+  </div>
+
+  <div class="section-head"><h2>The version 1 files</h2></div>
+  <p class="quiet">
+    The files apps read before this site existed stay where they are, with the same content:
+    <span class="mono">api/v1/catalog.json</span> and <span class="mono">api/v1/windows-x64.json</span> on the repository’s GitHub Pages.
+  </p>
+</Base>
+
+<style>
+  .endpoints {
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 1.5rem;
+  }
+  .endpoint {
+    display: grid;
+    gap: 0.55rem;
+    padding: 1rem 1.15rem;
+  }
+  .endpoint h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    font-size: 0.98rem;
+    overflow-wrap: anywhere;
+  }
+  .endpoint p,
+  .quiet {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+</style>
