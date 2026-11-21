@@ -1,0 +1,33 @@
+type: snap-declaration
+format: 1
+authority-id: canonical
+revision: 4
+series: 16
+snap-id: pOBIoZ2LrCB3rDohMxoYGnbN14EHOgD7
+plugs:
+  pipewire:
+    allow-auto-connection: true
+  pulseaudio:
+    allow-auto-connection: true
+publisher-id: Z7emHVerQzTDQrOcaLJ8wO1ir1NPl3fG
+slots:
+  mpris:
+    allow-connection:
+      -
+        slot-attributes:
+          name: spotify
+    deny-auto-connection: true
+snap-name: spotify
+timestamp: 2026-04-15T21:56:46.282279Z
+sign-key-sha3-384: BWDEoaqyr25nF5SNCvEv2v7QnM9QsfCc0PBMYD_i2NGSQ32EF2d4D0hqUel3m8ul
+
+AcLBUgQAAQoABgUCaeAJngAABhAQAKjBui+MFvzKaOeaNSuNEwMwTklJpS0R8c7TrZTv34G+nyRm
+oQH4zWsY35yrCITAR/7T/zoINjtgBZIoCgRp1EHv2PIeA0pkJdalKMtd+SA3hH42tBZKAN0ncBvL
+DHFUx9zdaPY5q6fs3DFZIdE5KxBeTw5Bc4bfY8xJrIZHTyPNwXqN2GLaIubjp5x/kzqOInLunxr6
+wVjFZsMejamx46VzeBYc7APFr7AnusOiMScHJIDXfRSaIOBsOQ7QNqpcAPqPqZYsUK71bF2ertqC
+FxOk8DZCTDOJOy8lYMbDSz3BNsZPv8FgoRN3LhaaReFVSroI4Ld5pXwksy7aeOIaJc0UyynuVq2p
+ZVE9V3DkSk8rZUBMPmehSbRVR3iNj2fSzYnpUDwNTSd0KFugdVli3PMQ0OCQdLVmWw8EnWM///tQ
+bM3haKGJym5JZ6Z1QCia6vmaQNmHU+V8VdwONYqXebvAxKTJmTsSm2NAt+G3ebRwY01T9UfQ76uG
+SmH3M7wT8yEfJqHp1315xwZuBSs7fTV0BvmSSqseMRWzYijtXeSr0uGq+UO2G9pOkuItQ4wOczQO
+yEp0H4R+VJTNHJ+0jqGFFtbRNnDeNQmGq9vFGxOcBDxWTw1+NkjRENJICawyJofHSRZ/L0op4TSJ
+h4WMAgwjIWE98L3o5Eyw5kyeutm9

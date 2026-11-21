@@ -1,0 +1,2 @@
+Processing: /tmp/SpotifyARM64.dmg
+The validate action worked!

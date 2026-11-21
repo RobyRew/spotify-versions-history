@@ -1,0 +1,22 @@
+--prepared:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Chromium Embedded Framework.framework/Versions/Current/.
+--validated:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Chromium Embedded Framework.framework/Versions/Current/.
+--prepared:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Spotify Helper (GPU).app
+--validated:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Spotify Helper (GPU).app
+--prepared:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Spotify Helper (Plugin).app
+--validated:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Spotify Helper (Plugin).app
+--prepared:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Spotify Helper (Renderer).app
+--validated:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Spotify Helper (Renderer).app
+--prepared:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Spotify Helper.app
+--validated:/Volumes/Spotify/Spotify.app/Contents/Frameworks/Spotify Helper.app
+--prepared:/Volumes/Spotify/Spotify.app/Contents/Library/LoginItems/StartUpHelper.app
+--validated:/Volumes/Spotify/Spotify.app/Contents/Library/LoginItems/StartUpHelper.app
+--prepared:/Volumes/Spotify/Spotify.app/Contents/MacOS/crashpad_handler
+--validated:/Volumes/Spotify/Spotify.app/Contents/MacOS/crashpad_handler
+--prepared:/Volumes/Spotify/Spotify.app/Contents/MacOS/save-to-spotify
+--validated:/Volumes/Spotify/Spotify.app/Contents/MacOS/save-to-spotify
+--prepared:/Volumes/Spotify/Spotify.app/Contents/MacOS/sp_relauncher
+--validated:/Volumes/Spotify/Spotify.app/Contents/MacOS/sp_relauncher
+--prepared:/Volumes/Spotify/Spotify.app/Contents/MacOS/spotify_cli
+--validated:/Volumes/Spotify/Spotify.app/Contents/MacOS/spotify_cli
+/Volumes/Spotify/Spotify.app: valid on disk
+/Volumes/Spotify/Spotify.app: satisfies its Designated Requirement

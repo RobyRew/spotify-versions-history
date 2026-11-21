@@ -1,0 +1,2 @@
+/Volumes/Spotify/Spotify.app: accepted
+source=Notarized Developer ID

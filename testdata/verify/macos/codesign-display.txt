@@ -1,0 +1,21 @@
+Executable=/Volumes/Spotify/Spotify.app/Contents/MacOS/Spotify
+Identifier=com.spotify.client
+Format=app bundle with Mach-O thin (arm64)
+CodeDirectory v=20500 size=84958 flags=0x10000(runtime) hashes=2644+7 location=embedded
+Hash type=sha256 size=32
+CandidateCDHash sha256=08bf662ce9de07191fcbe5225f739f442f2981c9
+CandidateCDHashFull sha256=08bf662ce9de07191fcbe5225f739f442f2981c965716daadc772547d6493cc3
+Hash choices=sha256
+CMSDigest=08bf662ce9de07191fcbe5225f739f442f2981c965716daadc772547d6493cc3
+CMSDigestType=2
+CDHash=08bf662ce9de07191fcbe5225f739f442f2981c9
+Signature size=8964
+Authority=Developer ID Application: Spotify (2FNC3A47ZF)
+Authority=Developer ID Certification Authority
+Authority=Apple Root CA
+Timestamp=13 Nov 2026 at 18:14:05
+Info.plist entries=37
+TeamIdentifier=2FNC3A47ZF
+Runtime Version=27.0.0
+Sealed Resources version=2 rules=13 files=188
+Internal requirements count=1 size=180

@@ -3,6 +3,7 @@
  * VS_VERSIONINFO ProductVersion string. readRemotePe reads only the headers, the .rsrc section
  * (about 290 KB for Spotify's installers) and not the remaining ~160 MB.
  */
+import { open } from 'node:fs/promises';
 import { FULL_VERSION } from '../../lib/versions.ts';
 import type { Arch, Fetch } from '../types.ts';
 import { getRange } from './http.ts';
@@ -22,6 +23,10 @@ export interface PeLayout {
   sections: PeSection[];
   /** File offset and size of the Authenticode certificate table, when the file is signed. */
   certificate: { offset: number; size: number } | null;
+  /** File offset of the optional header's CheckSum field (4 bytes), which the Authenticode image hash skips. */
+  checksumOffset: number;
+  /** File offset of the security data directory entry (8 bytes), which the Authenticode image hash skips. */
+  securityDirectoryOffset: number;
 }
 
 export function parsePeHeaders(head: Uint8Array): PeLayout {
@@ -47,7 +52,12 @@ export function parsePeHeaders(head: Uint8Array): PeLayout {
   }
   const certOffset = view.getUint32(security, true);
   const certSize = view.getUint32(security + 4, true);
-  return { machine, sections, certificate: certSize > 0 ? { offset: certOffset, size: certSize } : null };
+  return {
+    machine, sections,
+    certificate: certSize > 0 ? { offset: certOffset, size: certSize } : null,
+    checksumOffset: optional + 64,
+    securityDirectoryOffset: security,
+  };
 }
 
 /** The ProductVersion string of a VS_VERSIONINFO resource somewhere in `bytes`, or null. */
@@ -76,6 +86,29 @@ export interface RemotePe {
   productVersion: string;
   certificate: { offset: number; size: number } | null;
   bytesRead: number;
+}
+
+/** Machine type and ProductVersion of a PE file on disk, reading only its headers and its .rsrc section. */
+export async function readLocalPe(path: string): Promise<{ machine: number; arch: Arch | null; productVersion: string }> {
+  const handle = await open(path, 'r');
+  try {
+    const { size } = await handle.stat();
+    const read = async (position: number, length: number): Promise<Uint8Array> => {
+      if (position < 0 || length <= 0 || position + length > size) throw new Error(`${path}: bytes ${position}-${position + length} are past the end (${size} bytes)`);
+      const bytes = new Uint8Array(length);
+      const { bytesRead } = await handle.read(bytes, 0, length, position);
+      if (bytesRead !== length) throw new Error(`${path}: read ${bytesRead} of ${length} bytes at ${position}`);
+      return bytes;
+    };
+    const layout = parsePeHeaders(await read(0, Math.min(HEADER_BYTES, size)));
+    const rsrc = layout.sections.find(section => section.name === '.rsrc');
+    if (!rsrc || rsrc.rawSize === 0) throw new Error(`${path}: no .rsrc section`);
+    const productVersion = findProductVersion(await read(rsrc.rawPointer, rsrc.rawSize));
+    if (!productVersion || !FULL_VERSION.test(productVersion)) throw new Error(`${path}: unexpected ProductVersion ${JSON.stringify(productVersion)}`);
+    return { machine: layout.machine, arch: MACHINES[layout.machine] ?? null, productVersion };
+  } finally {
+    await handle.close();
+  }
 }
 
 /** Reads a remote installer's identity with range requests pinned to `etag`; `size` caps the header read. */

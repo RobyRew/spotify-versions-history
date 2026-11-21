@@ -1,0 +1,2 @@
+/tmp/SpotifyARM64.dmg: rejected
+source=no usable signature
