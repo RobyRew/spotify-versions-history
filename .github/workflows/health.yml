@@ -1,0 +1,56 @@
+name: Link health
+# Checks the ledger's download links (sensors/health.ts): Spotify's current-build URLs and apt pool on
+# every run, signed links by their token's expiry, the LoadSpot mirror and archive copies once a week
+# each (a seventh of them per day). The previous results come from the Actions cache, so a run only
+# asks for what is due; nothing is committed. A current-build URL that does not answer, or a mirror
+# failing for most links, keeps one open issue labelled sensor-alert until a run sees it healthy.
+on:
+  schedule:
+    - cron: '41 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      all:
+        description: 'Check every link now, not only the ones due today'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: link-health
+  cancel-in-progress: false
+jobs:
+  health:
+    if: github.repository == 'RobyRew/spotify-versions-history'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/cache/restore@v6
+        with:
+          path: health.json
+          key: link-health-${{ github.run_id }}
+          restore-keys: link-health-
+      - name: Check the download links
+        run: node sensors/health.ts --legacy site/data --previous health.json --out health.json --alerts alerts.json ${{ inputs.all && '--all' || '' }}
+      - uses: actions/cache/save@v6
+        with:
+          path: health.json
+          key: link-health-${{ github.run_id }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: health
+          path: health.json
+          retention-days: 30
+      - name: Keep one issue per failing check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node sensors/alerts.ts --alerts alerts.json

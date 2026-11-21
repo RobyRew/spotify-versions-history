@@ -1,0 +1,3 @@
+HTTP/2 404 
+accept-ranges: bytes
+content-length: 0

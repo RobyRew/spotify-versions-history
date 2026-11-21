@@ -1,0 +1,4 @@
+HTTP/2 302 
+content-type: text/html; charset=utf-8
+location: https://release-assets.githubusercontent.com/github-production-release-asset/212613049/b6d5fc5e-7bde-494d-ac91-4817b0b63dab?sp=REDACTED&sv=REDACTED&sr=REDACTED&spr=REDACTED&se=REDACTED&rscd=REDACTED&rsct=REDACTED&skoid=REDACTED&sktid=REDACTED&skt=REDACTED&ske=REDACTED&sks=REDACTED&skv=REDACTED&sig=REDACTED&jwt=REDACTED&response-content-disposition=REDACTED&response-content-type=REDACTED
+content-length: 0

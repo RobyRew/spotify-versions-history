@@ -1,0 +1,172 @@
+name: Verify current builds
+# Downloads the builds Spotify's channels serve right now and checks every file:
+#  - Linux: Authenticode and Store package signatures in-process (Node's crypto), osslsigncode as a
+#    second implementation, the apt and snap signature chains, and every digest the channels state;
+#  - macOS: codesign, spctl and stapler on the DMGs;
+#  - Windows: Get-AuthenticodeSignature and signtool on the installers and the Store packages.
+# The hosts' reports are merged into one verdict per build (sensors/verify/report.ts). A sensor with a
+# build that is not ok keeps one open issue labelled sensor-alert, closed again by the next clean run.
+# Nothing is committed and no build is stored: the run keeps only its reports.
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Sensors to verify (comma-separated: windows, macos, apt, snap, store)'
+        default: 'windows,macos,apt,snap,store'
+permissions:
+  contents: read
+concurrency:
+  group: verify
+  cancel-in-progress: false
+env:
+  ONLY: ${{ inputs.only || 'windows,macos,apt,snap,store' }}
+  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+jobs:
+  detect:
+    if: github.repository == 'RobyRew/spotify-versions-history'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Detect the builds each channel serves now
+        # A failing sensor exits 1 after the others ran; its builds are then missing from the
+        # detections and the merge raises its alert.
+        run: node sensors/run.ts detect --only "$ONLY" --json detections.json || echo "::warning::at least one sensor failed"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: detections
+          path: detections.json
+          retention-days: 30
+
+  linux:
+    needs: detect
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Install osslsigncode
+        run: sudo apt-get update -q && sudo apt-get install -y -q osslsigncode && osslsigncode --version | head -1
+      - uses: actions/download-artifact@v8
+        with:
+          name: detections
+      - name: Capture and verify on Linux
+        run: node sensors/verify.ts run --detections detections.json --only "$ONLY" --work "$RUNNER_TEMP/work" --out report-linux.json --run-url "$RUN_URL"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-linux
+          path: report-linux.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+  macos:
+    needs: detect
+    if: contains(inputs.only || 'windows,macos,apt,snap,store', 'macos')
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v8
+        with:
+          name: detections
+      - name: Capture and verify on macOS
+        run: node sensors/verify.ts run --detections detections.json --only macos --work "$RUNNER_TEMP/work" --out report-macos.json --run-url "$RUN_URL"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-macos
+          path: report-macos.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+  windows:
+    needs: detect
+    if: contains(inputs.only || 'windows,macos,apt,snap,store', 'windows') || contains(inputs.only || 'windows,macos,apt,snap,store', 'store')
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v8
+        with:
+          name: detections
+      - name: Capture and verify on Windows
+        run: |
+          here=()
+          for sensor in windows store; do [[ ",$ONLY," == *",$sensor,"* ]] && here+=("$sensor"); done
+          node sensors/verify.ts run --detections detections.json --only "$(IFS=,; echo "${here[*]}")" --work "$RUNNER_TEMP/work" --out report-windows.json --run-url "$RUN_URL"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-windows
+          path: report-windows.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+  report:
+    needs: [detect, linux, macos, windows]
+    if: always() && needs.detect.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: report-*
+          merge-multiple: true
+      - name: Merge the hosts' reports
+        id: merge
+        continue-on-error: true
+        run: node sensors/verify.ts merge --out merged.json --summary "$GITHUB_STEP_SUMMARY" --alerts alerts.json --sensors "$ONLY" report-*.json
+      - name: Keep one issue per failing sensor
+        if: always() && hashFiles('alerts.json') != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node sensors/alerts.ts --alerts alerts.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: merged-report
+          path: merged.json
+          if-no-files-found: ignore
+          retention-days: 90
+      - name: Fail the run when a build is not ok
+        if: steps.merge.outcome == 'failure'
+        run: exit 1

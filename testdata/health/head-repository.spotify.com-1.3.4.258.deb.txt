@@ -1,0 +1,6 @@
+HTTP/2 200 
+content-type: application/octet-stream
+last-modified: Mon, 12 Oct 2026 09:09:43 GMT
+etag: "6acca3d7-aaf0044"
+accept-ranges: bytes
+content-length: 179241028
