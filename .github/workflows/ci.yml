@@ -2,6 +2,7 @@ name: Ledger and feeds
 # Type check and tests for the ledger v2 package at the repository root (lib/, scripts/, test/).
 # While site/ still exists, also compares the v1 files generated from the ledger with the v1
 # generator's on the full site/data (scripts/legacy/check-v1-equivalence.mjs).
+# The site job type-checks and builds the archive's website (web/), which imports lib/ and sensors/.
 on:
   push:
     branches: [main]
@@ -14,6 +15,7 @@ on:
       - 'ledger/**'
       - 'site/data/**'
       - 'site/src/lib/catalog.mjs'
+      - 'web/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig.json'
@@ -45,3 +47,23 @@ jobs:
         run: npm test
       - name: v1 files from the ledger against the v1 generator on the full catalog
         run: npm run ledger:equivalence
+
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+      # The site imports lib/ and sensors/, whose dependencies (zod) come from the root install.
+      - run: npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+        working-directory: web
+      - name: Type check (TypeScript 7 and Astro's checker) and production build
+        run: npm run build
+        working-directory: web
