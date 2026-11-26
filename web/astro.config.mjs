@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { houseDefaults } from '@robyrew/web-config/astro';
 import { themeBootstrap } from '@robyrew/web-config/theme-bootstrap';
 
-const site = process.env.PUBLIC_SITE_URL || 'https://spotify-versions-history.robyrew.com';
+const site = process.env.PUBLIC_SITE_URL || 'https://version-history.spotify.robyrew.com';
 // Sign-out is a form POST answered with a 303 to Logto's end_session, so the form-action list names
 // Logto; avatars load from the RobyRew ID site (src/lib/community.ts shows no other origin).
 const logto = new URL(process.env.LOGTO_ENDPOINT || 'https://auth.robyrew.com').origin;

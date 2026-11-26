@@ -279,11 +279,22 @@ export async function listStorePackages(transport: Fe3Transport, trust: TrustAnc
   return { packages: packages.sort((a, b) => a.packageFullName.localeCompare(b.packageFullName)), others: others.sort(), rounds, notes };
 }
 
-/** The short-lived download link for one package file, and when it expires (its P1 parameter). */
-export async function resolveDownload(transport: Fe3Transport, pkg: StorePackageFile, now: Date): Promise<{ url: string; expiresAt: string | null; sha1: string }> {
-  const answer = await post(transport, FE3_SECURED_URL, fileUrlRequest(pkg.updateId, pkg.revision, now));
-  const location = parseFileLocations(answer.body, answer.status).find(candidate => candidate.sha1 === pkg.sha1);
-  if (!location) throw new Fe3Error(`GetExtendedUpdateInfo2 names no location with the SHA-1 of ${pkg.packageFullName}`);
+/**
+ * The short-lived download link for one package file, and when it expires (its P1 parameter). FE3
+ * now and then answers GetExtendedUpdateInfo2 without the file's location (seen on the x86 packages
+ * on three days in November 2026, each followed by a clean run), so a missing location is asked for
+ * again, `attempts` times in all, `waitMs` apart and growing.
+ */
+export async function resolveDownload(
+  transport: Fe3Transport, pkg: StorePackageFile, now: Date, { attempts = 3, waitMs = 3000 }: { attempts?: number; waitMs?: number } = {},
+): Promise<{ url: string; expiresAt: string | null; sha1: string }> {
+  let location: { url: string; sha1: string } | undefined;
+  for (let attempt = 1; attempt <= attempts && !location; attempt++) {
+    if (attempt > 1) await new Promise(resolve => setTimeout(resolve, waitMs * (attempt - 1)));
+    const answer = await post(transport, FE3_SECURED_URL, fileUrlRequest(pkg.updateId, pkg.revision, now));
+    location = parseFileLocations(answer.body, answer.status).find(candidate => candidate.sha1 === pkg.sha1);
+  }
+  if (!location) throw new Fe3Error(`GetExtendedUpdateInfo2 names no location with the SHA-1 of ${pkg.packageFullName} (asked ${attempts} times)`);
   const url = new URL(location.url);
   if (!/^https?:$/.test(url.protocol) || !/(^|\.)delivery\.mp\.microsoft\.com$/.test(url.hostname)) throw new Fe3Error(`the download link ${url.origin} is not on Microsoft's delivery hosts`);
   const expiry = Number(url.searchParams.get('P1'));

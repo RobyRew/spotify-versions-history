@@ -34,7 +34,7 @@ seeded people (`mira` has the `moderator` role, `carol` has no handle yet) and k
 | `LEGACY_DATA_DIR` | `../site/data` | the v1 data files, converted with `fromLegacy` until the ledger files are committed; the fallback when `LEGACY_DATA_URL` cannot be read at start |
 | `HEALTH_URL` / `HEALTH_FILE` | `.data/health.json` | link health, as `sensors/health.ts` writes it |
 | `VERIFICATION_URL` / `VERIFICATION_FILE` | `.data/verification.json` | the merged report `sensors/verify.ts merge` writes |
-| `PUBLIC_SITE_URL` | `https://spotify-versions-history.robyrew.com` | the site's own URL, for canonical links and CSRF origin checks |
+| `PUBLIC_SITE_URL` | `https://version-history.spotify.robyrew.com` | the site's own URL, for canonical links and CSRF origin checks |
 
 Health and verification are optional: without them every link not known to be dead is offered and
 every file shows as not checked yet.
@@ -65,7 +65,7 @@ runs the standalone server on port 4321 with `HEALTHCHECK NONE` (the host's prob
 CI's `image` job builds it after the tests and pushes `ghcr.io/robyrew/spotify-versions-history`
 (`latest` and the commit SHA) when the site's inputs changed, then calls the repository secret
 `DOKPLOY_DEPLOY_WEBHOOK` so Dokploy pulls it. Dokploy runs it as the application
-`spotify-versions-history` (Tools project) at https://spotify-versions-history.robyrew.com, with:
+`spotify-versions-history` (Tools project) at https://version-history.spotify.robyrew.com, with:
 
 - the named volume `spotify-versions-history-data` at `/app/data` (`archive.db`, and
   `snapshot/archive.db`, the copy to restore from);

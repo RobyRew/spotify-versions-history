@@ -25,8 +25,8 @@ const routes = [
     <ul class="route-list">
       {routes.map(([method, path, text]) => <li><code>{method} {path}</code><br />{text}</li>)}
     </ul>
-    <pre><code>{`curl -s https://spotify-versions-history.robyrew.com/api/v1/catalog.json
-curl -s -X POST https://spotify-versions-history.robyrew.com/api/v1/releases/1.2.93.667.g7b5cc0ce-windows-x64/comments \\
+    <pre><code>{`curl -s https://version-history.spotify.robyrew.com/api/v1/catalog.json
+curl -s -X POST https://version-history.spotify.robyrew.com/api/v1/releases/1.2.93.667.g7b5cc0ce-windows-x64/comments \\
   -H 'content-type: application/json' --cookie 'sv_sid=…' \\
   -d '{"body":"This build installs."}'`}</code></pre>
   </article>

@@ -25,7 +25,7 @@ COPY web ./web
 
 # Read at build time for the CSP (form-action names Logto, img-src the avatar origins) and the
 # canonical URL; the defaults are production's.
-ARG PUBLIC_SITE_URL=https://spotify-versions-history.robyrew.com
+ARG PUBLIC_SITE_URL=https://version-history.spotify.robyrew.com
 ARG LOGTO_ENDPOINT=https://auth.robyrew.com
 ARG AVATAR_ORIGINS=https://id.robyrew.com
 # Type checks run in CI (npm run check); the image only builds.

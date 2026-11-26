@@ -4,7 +4,7 @@ A searchable catalog of Spotify desktop installers for Windows, macOS and Linux,
 
 [**Browse the library**](https://robyrew.github.io/spotify-versions-history/) · [JSON catalog](https://robyrew.github.io/spotify-versions-history/api/v1/catalog.json) · [Windows x64 feed](https://robyrew.github.io/spotify-versions-history/api/v1/windows-x64.json)
 
-The same catalog is the site at `https://spotify-versions-history.robyrew.com` (see [docs/DEPLOY.md](docs/DEPLOY.md)): comments, likes and counted downloads live there. GitHub Pages keeps this JSON, which Make It Play already reads. iOS and the Microsoft Store are version records; Android has no installer until a device capture finds a Spotify URL ([docs/ANDROID_UPDATE.md](docs/ANDROID_UPDATE.md)).
+The same catalog is the site at `https://version-history.spotify.robyrew.com` (see [docs/DEPLOY.md](docs/DEPLOY.md)): comments, likes and counted downloads live there. GitHub Pages keeps this JSON, which Make It Play already reads. iOS and the Microsoft Store are version records; Android has no installer until a device capture finds a Spotify URL ([docs/ANDROID_UPDATE.md](docs/ANDROID_UPDATE.md)).
 
 Every build carries the source it came from — Spotify's own servers, an archived CI copy, or a community mirror — and, where the watcher saw it, the SHA-256 it computed from Spotify's own file.
 

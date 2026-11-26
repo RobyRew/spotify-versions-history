@@ -34,7 +34,7 @@ export interface SiteUser {
 }
 
 const env = process.env;
-export const SITE_ORIGIN = new URL(env.PUBLIC_SITE_URL || 'https://spotify-versions-history.robyrew.com').origin;
+export const SITE_ORIGIN = new URL(env.PUBLIC_SITE_URL || 'https://version-history.spotify.robyrew.com').origin;
 export const ID_SITE = env.ID_SITE_URL || 'https://id.robyrew.com';
 const AVATAR_ORIGINS = (env.AVATAR_ORIGINS || 'https://id.robyrew.com').split(',').map(origin => origin.trim()).filter(Boolean);
 

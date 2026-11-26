@@ -50,6 +50,8 @@ export interface PipelineOptions {
   fe3?: Fe3Transport;
   /** The host the checks run on; defaults to process.platform (tests override it). */
   host?: NodeJS.Platform;
+  /** The first pause before a failed download is tried again (default 5 s; tests pass 0). */
+  retryWaitMs?: number;
 }
 
 interface Context extends PipelineOptions {
@@ -94,8 +96,32 @@ function withoutQuery(url: string): string {
   return parsed.href;
 }
 
+/**
+ * A failure worth one more try: the connection dropped or timed out ("fetch failed" from undici, an
+ * abort, a reset). A file that changed, a digest or size that does not match, or an HTTP refusal is
+ * an answer, not a hiccup, and is reported at once. A snap download failing this way failed the
+ * whole day's run on 2026-11-23.
+ */
+export function isTransientFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error.name === 'TimeoutError' || error.name === 'AbortError') return true;
+  const text = `${error.message} ${(error as { cause?: { code?: string; message?: string } }).cause?.code ?? ''} ${(error as { cause?: { message?: string } }).cause?.message ?? ''}`;
+  return /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|UND_ERR_|socket hang up|other side closed|terminated/i.test(text);
+}
+
+const CAPTURE_ATTEMPTS = 3;
+
 async function capture(context: Context, report: ArtifactReport, request: Omit<CaptureRequest, 'maxBytes'>): Promise<string> {
-  const captured = await captureFile(context.fetch, { ...request, maxBytes: MAX_BYTES });
+  let captured: Awaited<ReturnType<typeof captureFile>> | null = null;
+  for (let attempt = 1; !captured; attempt++) {
+    try {
+      captured = await captureFile(context.fetch, { ...request, maxBytes: MAX_BYTES });
+    } catch (error) {
+      if (attempt >= CAPTURE_ATTEMPTS || !isTransientFailure(error)) throw error;
+      context.log(`${report.key}: download attempt ${attempt} failed (${(error as Error).message}); trying again`);
+      await new Promise(resolve => setTimeout(resolve, (context.retryWaitMs ?? 5000) * attempt));
+    }
+  }
   report.source = { url: report.source?.url ?? request.url, finalUrl: captured.finalUrl ?? null, etag: captured.etag, lastModified: captured.lastModified };
   report.file = { size: captured.size, ...captured.digests };
   report.checks.push(...captured.checks);

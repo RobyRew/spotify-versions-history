@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { TrustAnchors } from '../../lib/trust.ts';
 import {
-  FE3_SECURED_URL, FE3_URL, Fe3Error, getCookieRequest, listStorePackages, parseCookie, parseSyncUpdates, resolveDownload,
+  FE3_SECURED_URL, FE3_URL, getCookieRequest, listStorePackages, parseCookie, parseSyncUpdates, resolveDownload,
   type Fe3Transport, type StorePackageFile,
 } from '../../sensors/store/fe3.ts';
 import { here, trust as loadTrust } from '../sensors/helpers.ts';
@@ -79,10 +79,28 @@ describe('FE3', () => {
       updateId: '094f56f7-6fce-4e8d-8a09-b70fdcefcb16', revision: 1,
     };
     const unknown = await recordedTransport({ fileUrl: await fixture('extended-update-info2-unknown.response.xml') });
-    await expect(resolveDownload(unknown.transport, pkg, NOW)).rejects.toThrow(Fe3Error);
+    await expect(resolveDownload(unknown.transport, pkg, NOW, { waitMs: 0 })).rejects.toThrow(/asked 3 times/);
+    expect(unknown.requests.filter(request => request.url === FE3_SECURED_URL)).toHaveLength(3);
     const elsewhere = (await fixture('extended-update-info2.response.xml')).replaceAll('tlu.dl.delivery.mp.microsoft.com', 'downloads.example.com');
     const moved = await recordedTransport({ fileUrl: elsewhere });
     await expect(resolveDownload(moved.transport, pkg, NOW)).rejects.toThrow(/not on Microsoft's delivery hosts/);
+  });
+
+  it('asks again when an answer lacks the file\'s location, as FE3 sometimes does', async () => {
+    const { transport: good } = await recordedTransport();
+    const listing = await listStorePackages(good, anchors, NOW);
+    const x64 = listing.packages.find(pkg => pkg.packageFullName.includes('_x64_'))!;
+    const unknownXml = await fixture('extended-update-info2-unknown.response.xml');
+    let secured = 0;
+    const flaky: Fe3Transport = {
+      post: async (url, body) => {
+        if (url === FE3_SECURED_URL && secured++ === 0) return { status: 200, body: unknownXml };
+        return good.post(url, body);
+      },
+    };
+    const download = await resolveDownload(flaky, x64, NOW, { waitMs: 0 });
+    expect(download.sha1).toBe(x64.sha1);
+    expect(secured).toBe(2);
   });
 
   it('turns SOAP faults into errors that name the reason', async () => {

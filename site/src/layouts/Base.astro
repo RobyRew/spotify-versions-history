@@ -11,7 +11,7 @@ interface Props {
 const { title, description, page = 'library' } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const href = (path: string) => `${base}${path}`;
-const signIn = `https://spotify-versions-history.robyrew.com/api/auth/sign-in?returnTo=${encodeURIComponent('/')}`;
+const signIn = `https://version-history.spotify.robyrew.com/api/auth/sign-in?returnTo=${encodeURIComponent('/')}`;
 ---
 
 <!doctype html>
