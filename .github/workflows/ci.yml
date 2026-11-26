@@ -3,6 +3,9 @@ name: Ledger and feeds
 # While site/ still exists, also compares the v1 files generated from the ledger with the v1
 # generator's on the full site/data (scripts/legacy/check-v1-equivalence.mjs).
 # The site job type-checks and builds the archive's website (web/), which imports lib/ and sensors/.
+# The image job then builds web/Dockerfile and pushes ghcr.io/robyrew/spotify-versions-history, on
+# main only and only when the site's inputs changed: the release watcher's data commits do not
+# rebuild it, because the site reads site/data from GitHub while it runs.
 on:
   push:
     branches: [main]
@@ -20,6 +23,7 @@ on:
       - 'package-lock.json'
       - 'tsconfig.json'
       - 'vitest.config.ts'
+      - '.dockerignore'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
@@ -51,6 +55,8 @@ jobs:
   site:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      image: ${{ steps.inputs.outputs.changed }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -67,3 +73,35 @@ jobs:
       - name: Type check (TypeScript 7 and Astro's checker) and production build
         run: npm run build
         working-directory: web
+      - name: Did the image's inputs change?
+        id: inputs
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # A new branch, a force push or an unreachable parent: build.
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = 0000000000000000000000000000000000000000 ] || ! git fetch --quiet --depth=1 origin "$BEFORE"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --name-only "$BEFORE" HEAD | grep -v '\.md$' | grep -qE '^(web/|lib/|sensors/|package(-lock)?\.json$|tsconfig\.json$|\.dockerignore$|\.github/workflows/ci\.yml$)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  image:
+    needs: [test, site]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.site.outputs.image == 'true')
+    # A called workflow can only reduce the caller's permissions, so packages: write is granted here.
+    permissions:
+      contents: read
+      packages: write
+    uses: RobyRew/platform/.github/workflows/build-image.yml@main
+    with:
+      context: '.'
+      dockerfile: 'web/Dockerfile'
+      # Set to true once the Dokploy app exists and DOKPLOY_DEPLOY_WEBHOOK is set.
+      request_deploy: false
+    secrets:
+      DOKPLOY_DEPLOY_WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}

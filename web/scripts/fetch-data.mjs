@@ -1,8 +1,10 @@
 // Downloads the newest link-health file and verification report from the repository's CI runs into
-// .data/, for running the site locally: node scripts/fetch-data.mjs
-// It uses the GitHub CLI (gh), which must be signed in; artifacts of public repositories still need a token.
+// .data/, for running the site locally: node scripts/fetch-data.mjs [--out <dir>]
+// It uses the GitHub CLI (gh), which must be signed in (in Actions: GH_TOKEN with actions: read);
+// artifacts of public repositories still need a token. The Pages build runs it with --out to publish
+// both files next to the static APIs, where the production site reads them.
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readdir, rename, rm } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -14,7 +16,10 @@ const wanted = [
   { workflow: 'verify.yml', artifact: 'merged-report', file: 'merged.json', target: 'verification.json' },
 ];
 
-await mkdir('.data', { recursive: true });
+const outIndex = process.argv.indexOf('--out');
+const out = outIndex > 0 ? process.argv[outIndex + 1] : '.data';
+if (!out) throw new Error('--out needs a directory');
+await mkdir(out, { recursive: true });
 for (const { workflow, artifact, file, target } of wanted) {
   const { stdout } = await run('gh', ['run', 'list', '--repo', repository, '--workflow', workflow, '--status', 'completed', '--limit', '10', '--json', 'databaseId,conclusion']);
   const runs = JSON.parse(stdout);
@@ -24,8 +29,8 @@ for (const { workflow, artifact, file, target } of wanted) {
     try {
       await run('gh', ['run', 'download', String(databaseId), '--repo', repository, '--name', artifact, '--dir', directory]);
       if ((await readdir(directory)).includes(file)) {
-        await rename(join(directory, file), join('.data', target));
-        console.log(`.data/${target} from run ${databaseId}`);
+        await copyFile(join(directory, file), join(out, target));
+        console.log(`${join(out, target)} from run ${databaseId}`);
         saved = true;
         break;
       }

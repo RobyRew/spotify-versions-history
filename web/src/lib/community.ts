@@ -8,13 +8,16 @@
  *   LOGTO_COOKIE_SECRET         at least 32 characters; seals the session rows
  *   LOGTO_WEBHOOK_SIGNING_KEY   the site's Logto webhook (profile changes, suspensions, deletions)
  *   AVATAR_ORIGINS              origins avatars may load from (default https://id.robyrew.com)
+ *
+ * Every three hours (and a minute after start) the database is copied to DATA_DIR/snapshot/archive.db
+ * with VACUUM INTO: restore from that file, not from the live archive.db and its WAL.
  */
 import { join, resolve } from 'node:path';
 import { createLogtoAuth, type LogtoAuth, type LogtoClaims } from '@robyrew/astro-logto';
 import { displayHandle, handleFromClaims } from '@robyrew/astro-logto/handle';
 import { sqliteSessionStore, type SqliteLike } from '@robyrew/astro-logto/sqlite';
 import { createLogtoWebhookHandler } from '@robyrew/astro-logto/webhook';
-import { createSocialStore, openSocialDb, type SocialStore, type StoredUser } from '../../../lib/site/social-store.ts';
+import { createSocialStore, openSocialDb, snapshotDb, type SocialStore, type StoredUser } from '../../../lib/site/social-store.ts';
 import { safeAvatar, tokenBuckets } from '../../../lib/site/social.ts';
 
 export interface SiteUser {
@@ -54,9 +57,21 @@ function accountCreatedAt(claims: LogtoClaims): number | null {
   return raw < 1e12 ? raw * 1000 : raw;
 }
 
+const SNAPSHOT_EVERY_MS = 3 * 3_600_000;
+
 function build() {
-  const db = openSocialDb(join(resolve(env.DATA_DIR || './data'), 'archive.db'));
+  const dataDir = resolve(env.DATA_DIR || './data');
+  const db = openSocialDb(join(dataDir, 'archive.db'));
   const store = createSocialStore(db);
+  const snapshot = () => {
+    try {
+      snapshotDb(db, join(dataDir, 'snapshot', 'archive.db'));
+    } catch (error) {
+      console.error(`database snapshot failed: ${(error as Error).message}`);
+    }
+  };
+  setTimeout(snapshot, 60_000).unref();
+  setInterval(snapshot, SNAPSHOT_EVERY_MS).unref();
   const logtoReady = Boolean(env.LOGTO_ENDPOINT && env.LOGTO_APP_ID && env.LOGTO_APP_SECRET && env.LOGTO_COOKIE_SECRET);
   const auth: LogtoAuth<SiteUser> | null = logtoReady
     ? createLogtoAuth<SiteUser>({

@@ -26,6 +26,8 @@ jobs:
     permissions:
       contents: read
       issues: write
+      # Asks the Pages build to republish the health file the website reads.
+      actions: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -50,6 +52,12 @@ jobs:
           name: health
           path: health.json
           retention-days: 30
+      - name: Republish the website's status files on Pages
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
       - name: Keep one issue per failing check
         env:
           GITHUB_TOKEN: ${{ github.token }}

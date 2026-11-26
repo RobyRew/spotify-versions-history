@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { filterReleases, type ReleaseCounts, type ReleaseView } from '../../lib/site/model.ts';
-import { createSocialStore, openSocialDb } from '../../lib/site/social-store.ts';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { createSocialStore, openSocialDb, snapshotDb } from '../../lib/site/social-store.ts';
 import {
   clientAddress, commentAllowed, COMMENT_LIMITS, ipv6Hextets, isAllowedLink, isBot, isSameOriginJson, normalizeComment, parseComment,
   rateKeyOf, safeAvatar, subnetOf, tokenBuckets, visitorKey,
@@ -257,6 +261,27 @@ describe('social store', () => {
     expect(social.metrics().get('desktop/1')).toMatchObject({ downloads: 23, recentDownloads: 1 });
     const salt = social.dailySalt();
     expect(social.dailySalt()).toBe(salt);
+  });
+});
+
+describe('snapshots', () => {
+  it('writes a readable copy of the database next to a temporary name it removes', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'svh-snap-'));
+    try {
+      const db = openSocialDb(join(directory, 'archive.db'));
+      const social = createSocialStore(db);
+      social.upsertUser({ id: 'alice', handle: 'alice', name: null, avatar: null, roles: [] });
+      social.addComment('desktop/1', 'alice', "it's fine", null);
+      const target = join(directory, "snap'shot", 'archive.db');
+      snapshotDb(db, target);
+      snapshotDb(db, target);
+      const copy = new DatabaseSync(target, { readOnly: true });
+      expect(copy.prepare('SELECT body FROM comments').get()).toEqual({ body: "it's fine" });
+      copy.close();
+      db.close();
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 });
 

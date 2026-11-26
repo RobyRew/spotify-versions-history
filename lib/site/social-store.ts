@@ -4,7 +4,7 @@
  * reports, and daily download counts. The rules these queries apply are in social.ts.
  */
 import { randomBytes } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, renameSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { EDIT_WINDOW_MS, REACTIONS, REPORTS_TO_HIDE, SUBNET_DAILY_CAP, utcDay, type Reaction, type ReportReason } from './social.ts';
@@ -100,6 +100,19 @@ export function openSocialDb(file: string): DatabaseSync {
     }
   }
   return db;
+}
+
+/**
+ * Writes a consistent copy of the database to `target` (VACUUM INTO a temporary file, then a rename),
+ * for the host's backup, which copies the volume while the app runs: the live file and its WAL can be
+ * caught mid-write, the snapshot cannot.
+ */
+export function snapshotDb(db: DatabaseSync, target: string): void {
+  mkdirSync(dirname(target), { recursive: true });
+  const temporary = `${target}.tmp`;
+  rmSync(temporary, { force: true });
+  db.exec(`VACUUM INTO '${temporary.replaceAll("'", "''")}'`);
+  renameSync(temporary, target);
 }
 
 export interface UserInput {

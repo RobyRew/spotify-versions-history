@@ -1,0 +1,32 @@
+# The website image (web/Dockerfile) needs package*.json, tsconfig.json, lib/, sensors/, web/ and
+# three files of site/data. Everything else stays out of the build context.
+**/node_modules
+**/.astro
+**/dist
+**/dist-api
+.git
+.github
+.vscode
+.idea
+**/.DS_Store
+**/.env
+**/.env.*
+web/data
+web/.data
+web/scripts/dev-local.mjs
+bot
+docs
+ledger
+scripts
+test
+testdata
+site/*
+!site/data
+site/data/*
+!site/data/catalog.json
+!site/data/official.json
+!site/data/mobile.json
+**/* 2
+**/* 2.*
+*.md
+web/README.md

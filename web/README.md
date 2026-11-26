@@ -30,7 +30,8 @@ seeded people (`mira` has the `moderator` role, `carol` has no handle yet) and k
 | Variable | Default | What |
 | --- | --- | --- |
 | `LEDGER_DIR` | — | ledger files (`lib/ledger/io.ts`); used when set |
-| `LEGACY_DATA_DIR` | `../site/data` | the v1 data files, converted with `fromLegacy` until the ledger files are committed |
+| `LEGACY_DATA_URL` | — | a base URL for the v1 data files (`catalog.json`, `official.json`, `mobile.json`); tried first, refreshed every ten minutes |
+| `LEGACY_DATA_DIR` | `../site/data` | the v1 data files, converted with `fromLegacy` until the ledger files are committed; the fallback when `LEGACY_DATA_URL` cannot be read at start |
 | `HEALTH_URL` / `HEALTH_FILE` | `.data/health.json` | link health, as `sensors/health.ts` writes it |
 | `VERIFICATION_URL` / `VERIFICATION_FILE` | `.data/verification.json` | the merged report `sensors/verify.ts merge` writes |
 | `PUBLIC_SITE_URL` | `https://spotify-versions-history.robyrew.com` | the site's own URL, for canonical links and CSRF origin checks |
@@ -56,6 +57,23 @@ because sign-out answers with a redirect to Logto.
 
 The rules (comment text and links, limits, report threshold, download dedupe) are in
 `lib/site/social.ts`; the queries in `lib/site/social-store.ts`; both are tested by the root `npm test`.
+
+## Production
+
+`web/Dockerfile` (build context: the repository root) makes a non-root `node:26-alpine` image that
+runs the standalone server on port 4321 with `HEALTHCHECK NONE` (the host's probe calls `/healthz`).
+CI's `image` job builds it after the tests and pushes `ghcr.io/robyrew/spotify-versions-history`
+(`latest` and the commit SHA) when the site's inputs changed. Dokploy runs it as an application with:
+
+- the named volume `spotify-versions-history-data` at `/app/data` (`archive.db`, and
+  `snapshot/archive.db`, the copy to restore from);
+- a 192 MiB memory limit (the image caps the heap at 128 MB);
+- `LEGACY_DATA_URL=https://raw.githubusercontent.com/RobyRew/spotify-versions-history/main/site/data/`,
+  `HEALTH_URL=https://robyrew.github.io/spotify-versions-history/data/health.json` and
+  `VERIFICATION_URL=https://robyrew.github.io/spotify-versions-history/data/verification.json`: the
+  release watcher's commits, and the files the Pages build publishes from the newest health and
+  verify runs (both workflows ask Pages to republish when they finish);
+- the `LOGTO_*` variables above once the site's Logto app exists.
 
 ## Routes
 

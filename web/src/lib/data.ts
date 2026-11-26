@@ -3,8 +3,10 @@
  * (a request never waits on a refresh once a first copy exists).
  *
  * Where each input comes from, by environment variable:
- *  - the ledger: LEDGER_DIR (ledger files, lib/ledger/io.ts) or, until those are committed,
- *    LEGACY_DATA_DIR (site/data, converted with fromLegacy; default ../site/data);
+ *  - the ledger: LEDGER_DIR (ledger files, lib/ledger/io.ts) or, until those are committed, the v1
+ *    data files converted with fromLegacy: from LEGACY_DATA_URL (a base URL; production reads the
+ *    repository's site/data on main, which the release watcher keeps current) and, when that cannot
+ *    be read, from LEGACY_DATA_DIR (default ../site/data; the image carries the copy it was built with);
  *  - link health: HEALTH_URL or HEALTH_FILE (default .data/health.json), as sensors/health.ts writes it;
  *  - verification: VERIFICATION_URL or VERIFICATION_FILE (default .data/verification.json), the merged
  *    report sensors/verify.ts merge writes. `node scripts/fetch-data.mjs` downloads both from CI.
@@ -61,17 +63,36 @@ async function readJsonUrl(url: string): Promise<unknown> {
   return response.json();
 }
 
-async function loadLedger(): Promise<{ ledger: Ledger; from: string }> {
+const LEGACY_FILES = ['catalog.json', 'official.json', 'mobile.json'] as const;
+
+function legacyLedger([catalog, official, mobile]: unknown[]): Ledger {
+  return fromLegacy({ catalog: catalog as LegacyCatalog, official: official as LegacyOfficial, mobile: mobile ?? null });
+}
+
+/** `fallback`: use the bundled copy when the URL fails (the first load); a refresh keeps the copy it has instead. */
+async function loadLedger(fallback: boolean): Promise<{ ledger: Ledger; from: string }> {
   if (process.env.LEDGER_DIR) return { ledger: await readLedger(process.env.LEDGER_DIR), from: `ledger ${process.env.LEDGER_DIR}` };
+  let urlProblem = '';
+  if (process.env.LEGACY_DATA_URL) {
+    const base = process.env.LEGACY_DATA_URL.replace(/\/?$/, '/');
+    try {
+      const files = await Promise.all(LEGACY_FILES.map(name => readJsonUrl(new URL(name, base).href)));
+      return { ledger: legacyLedger(files), from: `site data ${base}` };
+    } catch (error) {
+      if (!fallback) throw error;
+      urlProblem = ` (${base} failed: ${(error as Error).message.slice(0, 160)})`;
+      console.error(`site data from ${base} failed, using the bundled copy: ${(error as Error).message}`);
+    }
+  }
   const directory = resolve(process.env.LEGACY_DATA_DIR ?? '../site/data');
-  const [catalog, official, mobile] = await Promise.all(['catalog.json', 'official.json', 'mobile.json'].map(async name => {
+  const files = await Promise.all(LEGACY_FILES.map(async name => {
     try { return await readJsonFile(resolve(directory, name)); }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT' && name === 'mobile.json') return null;
       throw error;
     }
   }));
-  return { ledger: fromLegacy({ catalog: catalog as LegacyCatalog, official: official as LegacyOfficial, mobile }), from: `site data ${directory}` };
+  return { ledger: legacyLedger(files), from: `site data ${directory}${urlProblem}` };
 }
 
 /** An optional input: the parsed value, or null with the reason it is missing. */
@@ -85,21 +106,28 @@ async function optional<T>(url: string | undefined, file: string, parse: (value:
   }
 }
 
-async function load(): Promise<SiteData> {
+async function load(fallback: boolean): Promise<SiteData> {
   const now = new Date();
   const [{ ledger, from }, health, verification] = await Promise.all([
-    loadLedger(),
+    loadLedger(fallback),
     optional(process.env.HEALTH_URL, process.env.HEALTH_FILE ?? '.data/health.json', value => HealthFile.parse(value)),
     optional(process.env.VERIFICATION_URL, process.env.VERIFICATION_FILE ?? '.data/verification.json', value => Report.parse(value) as unknown as MergedReport),
   ]);
+  // A refresh that cannot read an optional input keeps the copy it already has.
+  const keptHealth = health.value ?? cache?.data.health ?? null;
+  const keptVerification = verification.value ?? cache?.data.verification ?? null;
   return {
-    releases: releaseViews(ledger, health.value, verification.value, now),
+    releases: releaseViews(ledger, keptHealth, keptVerification, now),
     ledger,
     mobile: ledger.sensors.mobile,
-    health: health.value,
-    verification: verification.value,
+    health: keptHealth,
+    verification: keptVerification,
     loadedAt: now.toISOString(),
-    inputs: { ledger: from, health: health.from, verification: verification.from },
+    inputs: {
+      ledger: from,
+      health: health.value || !keptHealth ? health.from : `${cache?.data.inputs.health} (kept; ${health.from})`,
+      verification: verification.value || !keptVerification ? verification.from : `${cache?.data.inputs.verification} (kept; ${verification.from})`,
+    },
   };
 }
 
@@ -107,7 +135,7 @@ let cache: { data: SiteData; at: number } | null = null;
 let pending: Promise<SiteData> | null = null;
 
 function refresh(): Promise<SiteData> {
-  pending ??= load()
+  pending ??= load(cache === null)
     .then(data => { cache = { data, at: Date.now() }; return data; })
     .finally(() => { pending = null; });
   return pending;
