@@ -84,20 +84,70 @@ The archive keeps its own copy of every build the daily verify run passes at the
 every host, in the Cloudflare R2 bucket `spotify-versions-archive`, under
 `sha256/<hash>/spotify-<build>-<platform>-<arch>.<format>` (never overwritten):
 
-- `sensors/archive.ts` runs in verify.yml's report job: builds the record lacks are fetched again
-  through the verify pipeline, must have the checked SHA-256, and are written with a signed PUT
-  (`sensors/storage/r2.ts`, SigV4; R2 checks the SHA-256 too). `site/data/archive.json` records each
-  copy and is committed by the job.
+- `sensors/archive.ts` runs in verify.yml's report job: it lists the bucket first, then builds the
+  record lacks are fetched again through the verify pipeline, must have the checked SHA-256, and are
+  written with a signed PUT (`sensors/storage/r2.ts`, SigV4; R2 checks the SHA-256 too).
+  `site/data/archive.json` records each copy and is committed by the job.
 - `worker/` (deployed by worker.yml as `spotify-versions-files` on workers.dev) serves them: GET and
   HEAD, byte ranges, a year of caching, nothing outside `/sha256/`.
 - The site adds each copy as an "Archive copy" link (after Spotify's and the stores', before the
   mirror), and a copy of a file the ledger does not list (macOS disk image, Store package, snap)
   as a new file of its release.
 
-Needs the secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` (Edit Cloudflare Workers),
-`R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` (R2 Object Read & Write on the bucket), and the
-repository variable `ARCHIVE_FILES_URL` (the Worker's origin). Without them nothing is stored and the
-site shows the other links.
+Needs the secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` (Edit Cloudflare Workers, which
+must include Workers R2 Storage: Read for the bucket check below), `R2_ACCESS_KEY_ID` and
+`R2_SECRET_ACCESS_KEY` (R2 Object Read & Write on the bucket), and the repository variable
+`ARCHIVE_FILES_URL` (the Worker's origin). Without them nothing is stored and the site shows the
+other links.
+
+### Free-tier limits
+
+R2 bills storage and operations past its free tier, and Cloudflare has no spending limit for R2, so
+the limits live in this repository's code. The free tier, per month
+([R2 pricing](https://developers.cloudflare.com/r2/pricing/)): 10 GB-month of Standard storage (the
+average of each day's peak), 1 million Class A operations (PutObject, ListObjects, …) and 10 million
+Class B operations (HeadObject, GetObject, …); egress is free. Infrequent Access has no free tier.
+
+- **Storage: at most 9,000,000,000 bytes in the bucket** (`FREE_TIER_CAP_BYTES`). Each run lists the
+  bucket (paginated ListObjectsV2, `measure()`) before it plans or downloads anything, and counts the
+  larger of the listed total and the record's (`countedBytes`). Builds that would pass the cap are
+  skipped and named; if the listing fails, nothing is fetched or stored and the step exits 1. The R2
+  client also refuses a PUT before the listing, and a PUT whose body would take the counted bytes
+  past the cap; a PUT counts as written once it is sent, whatever R2 answers. `ARCHIVE_MAX_BYTES` can
+  lower the cap (`0` stores nothing) but not raise it, and a value that is not a whole number of bytes
+  stops the run. *Why:* a daily peak at or under 9 × 10⁹ bytes keeps the month's average under 10 GB
+  whether a GB is 10⁹ or 2³⁰ bytes. The listing counts copies a run stored without committing the
+  record; the record counts anything a listing missed.
+- **Class A: at most 200 per run** (`RUN_BUDGET.A`). Every request goes through one function that
+  counts it before it is sent: each listing page and each PUT is Class A (every request but HEAD is
+  counted as Class A). At 200 the client refuses the next one. verify.yml runs once a day, so its
+  scheduled runs send at most 6,200 a month. *Why:* R2 bills a PUT it rejects (412, 400) like one it
+  stores, so a retry loop or a bug would otherwise be bounded by nothing.
+- **Class B: at most 200 per run from the archive** (`RUN_BUDGET.B`: the HEAD before each PUT), and
+  **at most two reads per request from the files Worker** (`head`, then `get`). Workers Free answers
+  at most 100,000 requests a day for the whole account and returns error 1027 after that, so the
+  Worker reads R2 at most 6.2 million times a month. *Why:* reads are what anyone on the internet can
+  cause; the Worker's daily cap is what bounds them.
+- **Storage class: Standard only** (`STORAGE_CLASS`). Every PUT sends `x-amz-storage-class:
+  STANDARD`, so the bucket's default class does not decide it, and the client refuses to send any
+  other class. A listing that shows an object in another class stops the run's uploads. *Why:*
+  Infrequent Access storage, retrieval and operations are billed from the first byte, for at least
+  30 days.
+
+The read bound holds only while:
+
+- the account stays on Workers Free (Workers Paid has no daily cap);
+- the bucket has no public r2.dev URL and no custom domain, since reads through either skip the
+  Worker. worker.yml's `bucket` job (`sensors/bucket.ts`, every day at 03:47 UTC and with each
+  deploy) reads those settings with `CLOUDFLARE_API_TOKEN`, along with the bucket's default storage
+  class, its lifecycle rules (none may move objects to another class) and Sippy (which would copy
+  objects in from elsewhere), and fails when one of them is on or cannot be read;
+- no other Worker on the account reads the bucket more than twice per request.
+
+Only this repository writes to the bucket. Whatever else writes to it (another key, a dashboard
+upload) is counted by the next run's listing, which then stores less, but the archive cannot stop
+that writer. The archive step logs what it saw: the bucket's objects and bytes next to the
+record's, and the requests it sent per class.
 
 ## Routes
 
