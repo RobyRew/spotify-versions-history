@@ -51,19 +51,40 @@ export function filesToArchive(report: MergedReport, record: ArchiveRecord): Mer
 }
 
 /**
- * R2's free tier holds 10 GB a month; past it, storage is billed. The archive stays under this many
- * bytes (ARCHIVE_MAX_BYTES overrides it), so the bucket never leaves the free tier.
+ * R2's free tier holds 10 GB-month of Standard storage (the average of each day's peak); past it,
+ * storage is billed. The archive plans and writes copies only while the bucket stays at or under
+ * this many bytes, 9 × 10⁹, which is below 10 GB whether a GB is 10⁹ or 2³⁰ bytes.
  */
 export const FREE_TIER_CAP_BYTES = 9_000_000_000;
+
+/**
+ * The cap for a run: FREE_TIER_CAP_BYTES, or ARCHIVE_MAX_BYTES when that is lower. The variable can
+ * lower the cap (0 stores nothing) but not raise it; a value that is not a whole number of bytes
+ * throws, so the run stores nothing rather than guess.
+ */
+export function capFromEnv(value: string | undefined): number {
+  if (value === undefined || value.trim() === '') return FREE_TIER_CAP_BYTES;
+  const bytes = Number(value);
+  if (!Number.isSafeInteger(bytes) || bytes < 0) throw new Error(`ARCHIVE_MAX_BYTES must be a whole number of bytes, not ${JSON.stringify(value)}`);
+  return Math.min(bytes, FREE_TIER_CAP_BYTES);
+}
 
 export const storedBytes = (record: ArchiveRecord): number => Object.values(record.files).reduce((sum, file) => sum + file.size, 0);
 
 /**
- * Splits the wanted builds into those that fit under the cap with what is stored already (newest
- * build first) and those that would pass it. Nothing over the cap is ever uploaded.
+ * What the bucket is counted as holding: the larger of its listed total and the record's, so an
+ * object the record lacks (a run that stored it but did not commit) and a record entry the
+ * listing lacks both keep counting.
  */
-export function withinCap(wanted: readonly MergedArtifact[], record: ArchiveRecord, capBytes: number): { fit: MergedArtifact[]; over: MergedArtifact[] } {
-  let total = storedBytes(record);
+export const countedBytes = (listed: number, record: ArchiveRecord): number => Math.max(listed, storedBytes(record));
+
+/**
+ * Splits the wanted builds into those that fit under the cap on top of `stored` bytes (newest build
+ * first) and those that would pass it. `stored` is what the bucket is counted as holding: the
+ * larger of the bucket's listed total and the record's (sensors/archive.ts).
+ */
+export function withinCap(wanted: readonly MergedArtifact[], stored: number, capBytes: number): { fit: MergedArtifact[]; over: MergedArtifact[] } {
+  let total = stored;
   const fit: MergedArtifact[] = [];
   const over: MergedArtifact[] = [];
   const newestFirst = [...wanted].sort((a, b) => {

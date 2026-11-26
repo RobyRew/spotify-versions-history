@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { withArchive, type ArtifactView, type ReleaseView } from '../../lib/site/model.ts';
 import { classify, collectSources } from '../../sensors/health/check.ts';
-import { archiveFilename, copyUrl, emptyRecord, filesToArchive, FREE_TIER_CAP_BYTES, objectKey, recordEntry, storedBytes, withinCap, type ArchiveRecord } from '../../sensors/storage/archive.ts';
+import { archiveFilename, capFromEnv, copyUrl, countedBytes, emptyRecord, filesToArchive, FREE_TIER_CAP_BYTES, objectKey, recordEntry, storedBytes, withinCap, type ArchiveRecord } from '../../sensors/storage/archive.ts';
 import type { MergedArtifact, MergedReport } from '../../sensors/verify/report.ts';
 
 const SHA = (char: string) => char.repeat(64);
@@ -30,15 +30,39 @@ describe('what to keep', () => {
   it('never plans past the cap, newest builds first, counting what is stored', () => {
     const record = emptyRecord('https://x');
     record.files['stored'] = recordEntry(merged('stored', { size: 4_000_000_000 }), null, new Date());
-    const { fit, over } = withinCap([
+    const wanted = [
       merged('old', { version: '1.2.53.440', size: 3_000_000_000 }),
       merged('new', { version: '1.3.11.2657', size: 3_000_000_000 }),
       merged('newer-small', { version: '1.3.11.2657', size: 1_000_000_000 }),
-    ], record, 9_000_000_000);
+    ];
+    const { fit, over } = withinCap(wanted, countedBytes(0, record), 9_000_000_000);
     expect(fit.map(artifact => artifact.key)).toEqual(['new', 'newer-small']);
     expect(over.map(artifact => artifact.key)).toEqual(['old']);
     expect(storedBytes(record)).toBe(4_000_000_000);
-    expect(FREE_TIER_CAP_BYTES).toBeLessThan(10_000_000_000);
+    expect(FREE_TIER_CAP_BYTES).toBe(9_000_000_000);
+    // 9 × 10⁹ bytes is under 10 GB counted either way.
+    expect(FREE_TIER_CAP_BYTES).toBeLessThan(10 * 1e9);
+    expect(FREE_TIER_CAP_BYTES).toBeLessThan(10 * 2 ** 30);
+
+    // The bucket listed with more than the record (copies stored by a run that did not commit): the listing counts.
+    expect(countedBytes(7_000_000_000, record)).toBe(7_000_000_000);
+    const fuller = withinCap(wanted, countedBytes(7_000_000_000, record), 9_000_000_000);
+    expect(fuller.fit.map(artifact => artifact.key)).toEqual(['newer-small']);
+    expect(fuller.over.map(artifact => artifact.key)).toEqual(['new', 'old']);
+    // The listing showing less than the record: the record counts.
+    expect(countedBytes(1_000_000_000, record)).toBe(4_000_000_000);
+    expect(withinCap(wanted, 9_000_000_000, 9_000_000_000).fit).toEqual([]);
+  });
+
+  it('takes ARCHIVE_MAX_BYTES only to lower the cap', () => {
+    expect(capFromEnv(undefined)).toBe(FREE_TIER_CAP_BYTES);
+    expect(capFromEnv('')).toBe(FREE_TIER_CAP_BYTES);
+    expect(capFromEnv(' 5000000000 ')).toBe(5_000_000_000);
+    expect(capFromEnv('0')).toBe(0);
+    expect(capFromEnv('9000000001')).toBe(FREE_TIER_CAP_BYTES);
+    expect(capFromEnv('20000000000')).toBe(FREE_TIER_CAP_BYTES);
+    expect(capFromEnv('1e12')).toBe(FREE_TIER_CAP_BYTES);
+    for (const value of ['-1', '5.5', 'abc', 'Infinity', '1e400', '9 GB']) expect(() => capFromEnv(value)).toThrow(/whole number of bytes/);
   });
 
   it('names copies by build and stores them under their hash', () => {

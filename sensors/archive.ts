@@ -4,13 +4,17 @@
  *   node sensors/archive.ts --merged merged.json --detections detections.json \
  *        --record site/data/archive.json [--base <files Worker origin>] [--work <dir>] [--dry-run]
  *
- * Builds the record already holds are skipped without a download. The others are fetched again
- * through the verify pipeline (so the Store's signed links and the retries apply), each file's
- * SHA-256 must equal the merged report's, and the object is written only when the bucket does not
- * have it. The bucket never grows past ARCHIVE_MAX_BYTES (default 9 GB, under R2's free 10 GB): builds
- * that would pass it are skipped and named. The record is rewritten only when it changes. Needs CLOUDFLARE_ACCOUNT_ID,
- * R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (not with --dry-run); the base comes from --base,
- * ARCHIVE_FILES_URL or the record.
+ * Builds the record already holds are skipped without a download. Before anything is planned or
+ * fetched, the bucket is listed (measure() in sensors/storage/r2.ts); when the listing fails, nothing
+ * is fetched or stored and the run exits 1. The larger of the listed total and the record's total
+ * counts as stored, and builds are planned newest first while that plus the build stays at or under
+ * the cap (FREE_TIER_CAP_BYTES, 9 GB; ARCHIVE_MAX_BYTES can only lower it); the others are skipped
+ * and named. The planned builds are fetched again through the verify pipeline (so the Store's signed
+ * links and the retries apply), each file's SHA-256 must equal the merged report's, and the object is
+ * written only when the bucket does not have it. The R2 client refuses requests past the run's budget
+ * (RUN_BUDGET) and writes past the cap. The record is rewritten only when it changes. Needs
+ * CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (not with --dry-run, which plans
+ * from the record alone); the base comes from --base, ARCHIVE_FILES_URL or the record.
  */
 import { createHash } from 'node:crypto';
 import { readFile, rm, writeFile } from 'node:fs/promises';
@@ -19,8 +23,8 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { loadTrust } from '../lib/trust.ts';
 import { artifactId } from '../lib/ledger/schema.ts';
-import { archiveFilename, emptyRecord, filesToArchive, FREE_TIER_CAP_BYTES, recordEntry, storedBytes, withinCap, type ArchiveRecord } from './storage/archive.ts';
-import { r2Client, r2ConfigFromEnv } from './storage/r2.ts';
+import { archiveFilename, capFromEnv, countedBytes, emptyRecord, filesToArchive, recordEntry, storedBytes, withinCap, type ArchiveRecord } from './storage/archive.ts';
+import { r2Client, r2ConfigFromEnv, type R2Client } from './storage/r2.ts';
 import type { Detection } from './types.ts';
 import { runPipeline } from './verify/pipeline.ts';
 import type { MergedReport } from './verify/report.ts';
@@ -52,18 +56,39 @@ const base = values.base ?? process.env.ARCHIVE_FILES_URL ?? record.base;
 if (!base) throw new Error('No files Worker origin: pass --base or set ARCHIVE_FILES_URL');
 record.base = base.replace(/\/+$/, '');
 
-// Never past R2's free tier: what does not fit under the cap is skipped and named, and the run stays green.
-const capBytes = Number(process.env.ARCHIVE_MAX_BYTES) > 0 ? Number(process.env.ARCHIVE_MAX_BYTES) : FREE_TIER_CAP_BYTES;
-const { fit: wanted, over } = withinCap(filesToArchive(merged, record), record, capBytes);
+// R2's free tier: the cap can only be lowered, and the bucket is measured before anything is planned
+// or fetched. Without a measurement nothing is stored.
+const capBytes = capFromEnv(process.env.ARCHIVE_MAX_BYTES);
+const candidates = filesToArchive(merged, record);
+const recorded = storedBytes(record);
 const gb = (bytes: number) => (bytes / 1e9).toFixed(2);
-console.log(`${merged.artifacts.length} checked build(s); ${wanted.length + over.length} without a copy yet; stored ${gb(storedBytes(record))} GB of the ${gb(capBytes)} GB cap`);
-for (const artifact of wanted) console.log(`  ${artifact.key} → ${archiveFilename(artifact)} (${artifact.size} bytes)`);
-for (const artifact of over) console.warn(`  ${artifact.key}: skipped, it would pass the ${gb(capBytes)} GB cap`);
-
-if (wanted.length > 0 && !dryRun) {
+let r2: R2Client | null = null;
+let listed: { objects: number; bytes: number } | null = null;
+if (!dryRun) {
   const config = r2ConfigFromEnv();
-  if (!config) throw new Error('R2 is not configured: CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY');
-  const r2 = r2Client(config);
+  if (!config && candidates.length > 0) throw new Error('R2 is not configured: CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY');
+  if (config) {
+    r2 = r2Client(config, { capBytes, knownBytes: recorded });
+    try {
+      listed = await r2.measure();
+      console.log(`The bucket holds ${listed.objects} object(s), ${gb(listed.bytes)} GB; the record lists ${Object.keys(record.files).length} file(s), ${gb(recorded)} GB.`);
+    } catch (error) {
+      console.error(`The bucket was not measured, so nothing is fetched or stored: ${(error as Error).message}`);
+      process.exitCode = 1;
+    }
+  }
+}
+
+const stored = countedBytes(listed?.bytes ?? 0, record);
+const { fit: wanted, over } = withinCap(candidates, stored, capBytes);
+console.log(`${merged.artifacts.length} checked build(s); ${candidates.length} without a copy yet; ${gb(stored)} GB counted as stored of the ${gb(capBytes)} GB cap${listed ? '' : ' (from the record: the bucket was not measured)'}`);
+// The plan is listed when it can be acted on: on a dry run, or after the bucket was measured.
+if (dryRun || listed) {
+  for (const artifact of wanted) console.log(`  ${artifact.key} → ${archiveFilename(artifact)} (${artifact.size} bytes)`);
+  for (const artifact of over) console.warn(`  ${artifact.key}: skipped, it would pass the ${gb(capBytes)} GB cap`);
+}
+
+if (wanted.length > 0 && r2 && listed) {
   const file = JSON.parse(await readFile(values.detections, 'utf8')) as { results: { detections?: Detection[] }[] };
   const keys = new Set(wanted.map(artifact => artifact.key));
   const detections = file.results.flatMap(result => result.detections ?? []).filter(detection => keys.has(artifactId(detection.fullVersion ?? detection.version, detection.platform, detection.arch, detection.format)));
@@ -98,6 +123,10 @@ if (wanted.length > 0 && !dryRun) {
       await rm(path, { force: true });
     }
   }
+}
+if (r2) {
+  const { requests, written } = r2.usage();
+  console.log(`R2 requests this run: ${requests.A} Class A of ${r2.budget.limits.A}, ${requests.B} Class B of ${r2.budget.limits.B}; ${gb(written)} GB written.`);
 }
 
 // Keys sorted, so the committed file changes only where a copy was added.
