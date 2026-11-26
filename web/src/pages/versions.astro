@@ -8,7 +8,8 @@ import PageHead from '@robyrew/ui/components/PageHead.astro';
 import SearchField from '@robyrew/ui/components/SearchField.astro';
 import Base from '../layouts/Base.astro';
 import ReleaseItems from '../components/ReleaseItems.astro';
-import { ARCH_LABELS, filterReleases, page, PLATFORM_LABELS, type Arch, type Platform } from '../../../lib/site/model.ts';
+import { ARCH_LABELS, filterReleases, isReleaseSort, page, PLATFORM_LABELS, type Arch, type Platform } from '../../../lib/site/model.ts';
+import { releaseCounts } from '../lib/community.ts';
 import { siteData } from '../lib/data.ts';
 import { withParam } from '../lib/format.ts';
 
@@ -19,12 +20,15 @@ const platforms = [...new Set(data.releases.flatMap(release => release.platforms
 const arches = [...new Set(data.releases.flatMap(release => release.artifacts.map(artifact => artifact.arch)))];
 const platform = platforms.includes(params.get('platform') as Platform) ? (params.get('platform') as Platform) : null;
 const arch = arches.includes(params.get('arch') as Arch) ? (params.get('arch') as Arch) : null;
-const sort = params.get('sort') === 'oldest' ? 'oldest' : 'newest';
+const sortParam = params.get('sort');
+const sort = isReleaseSort(sortParam) ? sortParam : 'newest';
+// Downloads, likes and comments per release, for the metric sorts and the rows' counts.
+const counts = releaseCounts();
 const q = (params.get('q') ?? '').slice(0, 64);
 const signed = params.get('signed') === '1';
 const live = params.get('live') === '1';
 
-const matches = filterReleases(data.releases, { q, platform, arch, sort, signed, downloadable: live });
+const matches = filterReleases(data.releases, { q, platform, arch, sort, signed, downloadable: live, counts });
 const { items, next } = page(matches, params.get('cursor'), PAGE_SIZE);
 const nextHref = next ? (() => { const url = new URL(Astro.url); url.searchParams.set('cursor', next); return `${url.pathname}${url.search}`; })() : null;
 const shown = Math.min(matches.length, Number(params.get('cursor') ?? 0) + items.length);
@@ -55,7 +59,7 @@ const active = [
     <FilterChip label="Signed" name="signed" value="1" checked={signed} icon="shield" autosubmit />
     <FilterChip label="Live links" name="live" value="1" checked={live} icon="download" autosubmit />
     <ChipSelect label="Sort" name="sort" icon="sort" neutral autosubmit value={sort}
-      options={[['newest', 'Newest first'], ['oldest', 'Oldest first']]} />
+      options={[['newest', 'Newest first'], ['oldest', 'Oldest first'], ['downloads', 'Most downloaded'], ['trending', 'Trending this week'], ['liked', 'Most liked'], ['discussed', 'Most discussed']]} />
     <noscript><button class="rw-btn rw-btn--sm" type="submit">Apply</button></noscript>
   </form>
 
@@ -74,7 +78,7 @@ const active = [
     ) : (
       <>
         <ol class="rw-card rl-list" id="releases" aria-label="Releases">
-          <ReleaseItems releases={items} latest={data.releases[0]?.version} />
+          <ReleaseItems releases={items} latest={data.releases[0]?.version} counts={counts} />
         </ol>
         <LoadMore href={nextHref} target="#releases" items="li" status={`Showing ${shown} of ${matches.length}`} label="Load more releases" />
       </>

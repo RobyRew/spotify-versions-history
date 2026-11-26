@@ -198,14 +198,32 @@ export function releaseViews(ledger: Ledger, health: HealthFile | null, report: 
   }).sort((a, b) => compareVersions(b.version, a.version) || b.fullVersion.localeCompare(a.fullVersion));
 }
 
+export const RELEASE_SORTS = ['newest', 'oldest', 'downloads', 'trending', 'liked', 'discussed'] as const;
+export type ReleaseSort = (typeof RELEASE_SORTS)[number];
+export const isReleaseSort = (value: unknown): value is ReleaseSort => typeof value === 'string' && (RELEASE_SORTS as readonly string[]).includes(value);
+
+/** The community numbers the metric sorts read, per release key (`desktop/1.3.10.2586`). */
+export interface ReleaseCounts {
+  downloads: number;
+  recentDownloads: number;
+  likes: number;
+  comments: number;
+}
+
 export interface ReleaseQuery {
   q?: string;
   platform?: Platform | null;
   arch?: Arch | null;
-  sort?: 'newest' | 'oldest';
+  sort?: ReleaseSort;
   signed?: boolean;
   downloadable?: boolean;
+  /** For the metric sorts; a release missing from it counts as zero. */
+  counts?: ReadonlyMap<string, ReleaseCounts>;
 }
+
+const SORT_METRIC: Partial<Record<ReleaseSort, keyof ReleaseCounts>> = {
+  downloads: 'downloads', trending: 'recentDownloads', liked: 'likes', discussed: 'comments',
+};
 
 export function filterReleases(releases: readonly ReleaseView[], query: ReleaseQuery): ReleaseView[] {
   const q = query.q?.trim().toLowerCase();
@@ -215,7 +233,12 @@ export function filterReleases(releases: readonly ReleaseView[], query: ReleaseQ
     && (query.platform || !query.arch || release.artifacts.some(artifact => artifact.arch === query.arch))
     && (!query.signed || release.signed)
     && (!query.downloadable || release.downloadable));
-  return query.sort === 'oldest' ? matches.toReversed() : matches;
+  if (query.sort === 'oldest') return matches.toReversed();
+  const metric = query.sort ? SORT_METRIC[query.sort] : undefined;
+  if (!metric) return matches;
+  // Highest first; ties keep the newest-first order (the sort is stable).
+  const value = (release: ReleaseView) => query.counts?.get(`${release.product}/${release.version}`)?.[metric] ?? 0;
+  return matches.toSorted((a, b) => value(b) - value(a));
 }
 
 /** A cursor is the index of the next item; anything that is not a valid index starts at 0. */

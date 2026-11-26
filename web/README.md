@@ -14,8 +14,13 @@ The view of the data is `lib/site/model.ts` at the repository root (pure functio
 npm ci --prefix ..        # zod and the ledger code's dependencies
 npm ci
 node scripts/fetch-data.mjs   # newest health.json and verification report from CI into .data/ (needs gh)
-npm run dev                   # http://localhost:4355
+npm run dev                   # http://localhost:4355, read-only (no sign-in)
+npm run dev:local             # the same with sign-in against a fake Logto: pick a seeded person
 ```
+
+`dev:local` (`scripts/dev-local.mjs`) starts `@robyrew/astro-logto/testing` on 127.0.0.1:4356 with six
+seeded people (`mira` has the `moderator` role, `carol` has no handle yet) and keeps its data in
+`./data/dev`. It signs in anyone who asks: never deploy it.
 
 `npm run check` runs `astro sync`, TypeScript 7 and Astro's checker (on TypeScript 6, see
 `scripts/astro-check.mjs`); `npm run build` checks and builds; `npm run preview` serves the build.
@@ -33,15 +38,40 @@ npm run dev                   # http://localhost:4355
 Health and verification are optional: without them every link not known to be dead is offered and
 every file shows as not checked yet.
 
+Sign-in and the community data (`src/lib/community.ts`):
+
+| Variable | Default | What |
+| --- | --- | --- |
+| `DATA_DIR` | `./data` | `archive.db`: people who signed in, likes, reactions, comments, reports, daily download counts, sealed sessions. A volume in production |
+| `LOGTO_ENDPOINT` | — | `https://auth.robyrew.com`; with the next three, turns sign-in on |
+| `LOGTO_APP_ID` / `LOGTO_APP_SECRET` | — | the site's first-party Traditional Web app (redirect `/api/auth/callback`, post sign-out `/`, ID-token roles on) |
+| `LOGTO_COOKIE_SECRET` | — | at least 32 characters (`openssl rand -base64 32`); changing it signs everyone out |
+| `LOGTO_WEBHOOK_SIGNING_KEY` | — | the site's Logto webhook at `/api/hooks/logto` (User.Data.Updated, User.SuspensionStatus.Updated, User.Deleted) |
+| `AVATAR_ORIGINS` | `https://id.robyrew.com` | origins avatars load from; also read at build time for the CSP |
+| `ID_SITE_URL` | `https://id.robyrew.com` | where people manage their handle |
+
+Without the four `LOGTO_*` sign-in variables the site is read-only: counts and comments show, nothing
+offers to sign in. `LOGTO_ENDPOINT` is also read at build time: the CSP's `form-action` lists it,
+because sign-out answers with a redirect to Logto.
+
+The rules (comment text and links, limits, report threshold, download dedupe) are in
+`lib/site/social.ts`; the queries in `lib/site/social-store.ts`; both are tested by the root `npm test`.
+
 ## Routes
 
 | Route | |
 | --- | --- |
 | `/` | the newest build per platform (first-party links before the mirror), store listings, recent releases, probe status |
-| `/versions` | every release; GET filters (`q`, `platform`, `arch`, `signed`, `live`, `sort`) and Load more |
-| `/v/{product}/{version}` | one release: its files, hashes, verification, every link, permanent links, the commands to check a file by hand |
+| `/versions` | every release; GET filters (`q`, `platform`, `arch`, `signed`, `live`, `sort`: newest, oldest, downloads, trending, liked, discussed) and Load more |
+| `/v/{product}/{version}` | one release: its files, hashes, verification, every link, permanent links, the commands to check a file by hand, likes, reactions and comments |
 | `/probes` | the latest verification report and link health per source |
 | `/api`, `/about` | the API reference and how the archive works |
 | `/api/v2/…` | JSON: `releases`, `releases/{product}/{version}`, `latest[/{platform}/{arch}]`, `verification`, `health` |
-| `/dl/{artifact id}` | a permanent link: 302 to the best live copy |
+| `/dl/{artifact id}` | a permanent link: 302 to the best live copy; a browser GET counts one download per visitor, file and day |
+| `/api/auth/sign-in`, `/callback`, `/sign-out` | Logto sign-in (scopes `profile offline_access roles`, no e-mail); sign-out is a same-origin POST |
+| `/v/{product}/{version}/act` | the release page's form endpoint (like, react, comment, reply, edit, delete, report, review); JSON with `Accept: application/json` |
+| `/api/v2/releases/{product}/{version}/comments` | GET likes, reactions and shown comments; POST `{body, parentId?}` |
+| `/api/v2/releases/{…}/like`, `/reactions/{emoji}`, `/api/v2/comments/{id}[/reactions/{emoji}\|/report\|/review]` | signed-in JSON writes; same origin and `application/json` only |
+| `/admin` | reported comments, for the Logto role `moderator` |
+| `/api/hooks/logto` | the HMAC-checked Logto webhook |
 | `/healthz` | `ok` while the process serves requests |

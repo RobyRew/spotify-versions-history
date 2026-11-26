@@ -1,7 +1,8 @@
 ---
 /**
- * One artifact's download: the main half is the best link the site may offer, the menu lists every
- * link with its health dot and what is known about it. Links known to be dead stay in the menu as
+ * One artifact's download: the main half is the file's permanent /dl/ link, which redirects to the
+ * best live copy and counts the download; the menu lists every link with its health dot and what is
+ * known about it. Links known to be dead stay in the menu as
  * disabled records, so nobody wonders where an old link went.
  */
 import SplitButton from '@robyrew/ui/components/SplitButton.astro';
@@ -33,7 +34,7 @@ const name = platformName(artifact.platform, artifact.arch);
 
 <SplitButton
   label={artifact.best ? label : 'No live link'}
-  href={artifact.best?.url ?? null}
+  href={artifact.best ? `/dl/${artifact.id}` : null}
   icon="download"
   mainLabel={`Download ${version} for ${name}${artifact.size ? `, ${formatBytes(artifact.size)}` : ''}`}
   title={artifact.sha256 ? `SHA-256 ${artifact.sha256}` : undefined}

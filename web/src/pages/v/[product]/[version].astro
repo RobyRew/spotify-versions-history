@@ -5,12 +5,16 @@ import Disclosure from '@robyrew/ui/components/Disclosure.astro';
 import EmptyState from '@robyrew/ui/components/EmptyState.astro';
 import Icon from '@robyrew/ui/components/Icon.astro';
 import Base from '../../../layouts/Base.astro';
+import Community from '../../../components/Community.astro';
 import DownloadButton from '../../../components/DownloadButton.astro';
 import PlatformLabel from '../../../components/PlatformLabel.astro';
 import VerificationBadge from '../../../components/VerificationBadge.astro';
 import { findRelease, FORMAT_LABELS, neighbours, PLATFORM_LABELS } from '../../../../../lib/site/model.ts';
 import { siteData } from '../../../lib/data.ts';
 import { deviceFromHeaders } from '../../../lib/device.ts';
+import { community, viewerOf } from '../../../lib/community.ts';
+import { isNoticeCode } from '../../../lib/community-actions.ts';
+import { releaseKey } from '../../../../../lib/site/social.ts';
 import { formatBytes, formatDate, platformName, shortHash } from '../../../lib/format.ts';
 
 const data = await siteData();
@@ -30,6 +34,13 @@ const mine = release && device
   ? (release.artifacts.find(artifact => artifact.best && artifact.platform === device.platform && artifact.arch === device.arch)
     ?? release.artifacts.find(artifact => artifact.best && artifact.platform === device.platform) ?? null)
   : null;
+// Likes, reactions and comments, as the signed-in person (if any) may see them.
+const signInEnabled = community().auth !== null;
+const viewer = await viewerOf(Astro.request);
+const social = release ? community().store.releaseSocial(releaseKey(release), viewer ? { id: viewer.id, moderator: viewer.moderator } : null) : null;
+const noticeParam = Astro.url.searchParams.get('notice');
+const notice = isNoticeCode(noticeParam) ? noticeParam : null;
+
 // "Verify it yourself" opens on the visitor's system when the release has it.
 const openVerify = device && platforms.includes(device.platform) ? device.platform : platforms[0];
 ---
@@ -39,6 +50,7 @@ const openVerify = device && platforms.includes(device.platform) ? device.platfo
   title={release ? `Spotify ${release.version}` : 'Release not found'}
   description={release ? `Spotify ${release.fullVersion} for ${platforms.map(platform => platformName(platform)).join(', ')}: download links, SHA-256 and how each file was checked.` : undefined}
   noindex={!release}
+  viewer={viewer}
 >
   {
     !release ? (
@@ -58,6 +70,12 @@ const openVerify = device && platforms.includes(device.platform) ? device.platfo
               {isLatest && <span class="rw-badge rw-badge--accent">Latest</span>}
               {release.signed && <span class="rw-badge rw-badge--ok"><Icon name="shield" size={13} />Signed build verified</span>}
               {platforms.map(platform => <span class="rw-badge"><PlatformLabel platform={platform} /></span>)}
+              {social && (
+                <a class="rw-badge badges__community" href="#community">
+                  <Icon name="heart" size={13} />{social.likes}<span aria-hidden="true">·</span><Icon name="message" size={13} />{social.commentCount}
+                  <span class="sr-only">likes and comments</span>
+                </a>
+              )}
             </p>
           </div>
           {mine && (
@@ -143,6 +161,8 @@ const openVerify = device && platforms.includes(device.platform) ? device.platfo
           )}
         </div>
 
+        {social && <Community page={`/v/${release.product}/${release.version}`} social={social} viewer={viewer} signInEnabled={signInEnabled} notice={notice} />}
+
         <nav class="pager" aria-label="Other releases">
           {around.newer ? (
             <a class="rw-card rw-card--interactive pager__link" href={`/v/${around.newer.product}/${around.newer.version}`} rel="prev">
@@ -218,6 +238,14 @@ const openVerify = device && platforms.includes(device.platform) ? device.platfo
     flex-wrap: wrap;
     gap: 0.45rem;
     margin: 1rem 0 0;
+  }
+  .badges__community {
+    gap: 0.3rem;
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .badges__community:hover {
+    color: var(--accent);
   }
   .rhead__mine {
     display: grid;

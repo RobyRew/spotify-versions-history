@@ -1,0 +1,184 @@
+---
+/**
+ * A release's community section: likes and reactions, the comment box, and the comments. Signed-out
+ * visitors see everything and are offered sign-in; without sign-in configured on the server the
+ * section shows the counts read-only.
+ */
+import Avatar from '@robyrew/ui/components/Avatar.astro';
+import Callout from '@robyrew/ui/components/Callout.astro';
+import Composer from '@robyrew/ui/components/Composer.astro';
+import EmptyState from '@robyrew/ui/components/EmptyState.astro';
+import Icon from '@robyrew/ui/components/Icon.astro';
+import LikeButton from '@robyrew/ui/components/LikeButton.astro';
+import ReactionBar from '@robyrew/ui/components/ReactionBar.astro';
+import type { ReleaseSocial } from '../../../lib/site/social-store.ts';
+import { COMMENT_MAX } from '../../../lib/site/social.ts';
+import { GOOD_NOTICES, NOTICES, type NoticeCode } from '../lib/community-actions.ts';
+import { ID_SITE, signInHref, type SiteUser } from '../lib/community.ts';
+import CommentItem from './CommentItem.astro';
+
+interface Props {
+  /** /v/{product}/{version} */
+  page: string;
+  social: ReleaseSocial;
+  viewer: SiteUser | null;
+  signInEnabled: boolean;
+  notice: NoticeCode | null;
+}
+
+const { page, social, viewer, signInEnabled, notice } = Astro.props;
+const action = `${page}/act`;
+const signIn = signInHref(`${page}#community`);
+const now = Date.now();
+const commentsLabel = `${social.commentCount} ${social.commentCount === 1 ? 'comment' : 'comments'}`;
+---
+
+<section id="community" class="community" aria-labelledby="community-title" data-community data-sign-in={signInEnabled && !viewer ? signIn : undefined}>
+  <div class="section-head"><h2 id="community-title">Community</h2><span class="community__count">{commentsLabel}</span></div>
+
+  {
+    notice && (
+      <Callout tone={GOOD_NOTICES.has(notice) ? 'ok' : 'warn'} role="status" class="community__notice">
+        {NOTICES[notice]}
+      </Callout>
+    )
+  }
+
+  <div class="rw-card community__bar">
+    {
+      signInEnabled ? (
+        <LikeButton count={social.likes} liked={social.liked} action={action} name="value" fields={{ intent: 'like' }} label="Like this release" />
+      ) : (
+        <span class="community__likes" title="Likes"><Icon name="heart" size={17} />{social.likes}</span>
+      )
+    }
+    <ReactionBar
+      id="react-release"
+      reactions={social.reactions}
+      action={signInEnabled ? action : undefined}
+      fields={{ intent: 'react' }}
+      picker={viewer !== null && !viewer.suspended}
+      readonly={!signInEnabled}
+      labels={{ group: 'Reactions to this release' }}
+    />
+  </div>
+
+  {
+    viewer && !viewer.suspended && (
+      <div class="community__compose">
+        <Avatar name={viewer.name ?? viewer.handle} src={viewer.avatar} size="md" />
+        <div class="community__field">
+          <Composer
+            label="Write a comment"
+            action={action}
+            name="body"
+            maxlength={COMMENT_MAX}
+            placeholder="Does this build start, sign in, play? Share what you found."
+            hint="Plain text. `code` and ``` blocks work; links to Spotify, GitHub and RobyRew are clickable."
+            submit="Post"
+            busyLabel="Posting…"
+          >
+            <input type="hidden" name="intent" value="comment" />
+          </Composer>
+          {!viewer.hasHandle && (
+            <p class="community__hint">
+              You appear as <strong>@{viewer.handle}</strong> until you choose a handle at <a href={ID_SITE}>your RobyRew ID</a>.
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+  {viewer?.suspended && <Callout tone="warn" role="note">Your account is suspended, so it can’t post or react.</Callout>}
+  {
+    signInEnabled && !viewer && (
+      <div class="rw-card community__invite">
+        <p><strong>Join the conversation.</strong> Sign in with your RobyRew ID to comment. The site reads your handle, name and picture, nothing else.</p>
+        <a class="rw-btn rw-btn--primary" href={signIn}><Icon name="logIn" size={16} />Sign in</a>
+      </div>
+    )
+  }
+
+  {
+    social.comments.length > 0 ? (
+      <ol class="community__list">
+        {social.comments.map(comment => <CommentItem comment={comment} viewer={viewer} action={action} now={now} />)}
+      </ol>
+    ) : (
+      <EmptyState title="No comments yet" icon="message" compact>
+        <p>{viewer ? 'Be the first to say how this build behaves.' : 'Nobody has said anything about this build yet.'}</p>
+      </EmptyState>
+    )
+  }
+</section>
+
+<script>
+  import '../scripts/community.ts';
+</script>
+
+<style>
+  .community__count {
+    color: var(--ink-3);
+    font-size: 0.9rem;
+  }
+  .community :global(.community__notice) {
+    margin-bottom: 0.9rem;
+  }
+  .community__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.9rem;
+    padding: 0.8rem 1rem;
+  }
+  .community__likes {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .community__compose {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.8rem;
+    margin-top: 1rem;
+  }
+  .community__field {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+  .community__hint {
+    margin: 0;
+    color: var(--ink-3);
+    font-size: 0.84rem;
+  }
+  .community__hint a {
+    color: var(--ink-2);
+  }
+  .community__invite {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem 1.2rem;
+    margin-top: 1rem;
+    padding: 1rem 1.2rem;
+  }
+  .community__invite p {
+    margin: 0;
+    max-width: 40rem;
+    color: var(--ink-2);
+  }
+  .community__list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 1.2rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .community :global(.rw-empty) {
+    margin-top: 1rem;
+  }
+</style>

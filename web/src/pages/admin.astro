@@ -1,0 +1,86 @@
+---
+/**
+ * The moderators' queue: comments with reports since their last review, hidden ones first. Needs the
+ * Logto global role `moderator`. Keep and Remove post to the comment's release page.
+ */
+import EmptyState from '@robyrew/ui/components/EmptyState.astro';
+import PageHead from '@robyrew/ui/components/PageHead.astro';
+import Base from '../layouts/Base.astro';
+import CommentItem from '../components/CommentItem.astro';
+import { community, signInHref, viewerOf } from '../lib/community.ts';
+
+// Decided in the page rather than with an early return, which astro check would not look past.
+const { auth, store } = community();
+const viewer = auth ? await viewerOf(Astro.request) : null;
+const moderator = viewer?.moderator === true;
+Astro.response.status = !auth ? 404 : !viewer ? 401 : moderator ? 200 : 403;
+const queue = viewer && moderator ? store.reportQueue({ id: viewer.id, moderator: true }) : [];
+const REASONS: Record<string, string> = { spam: 'spam', abuse: 'abuse', malware: 'harmful download', other: 'other' };
+const now = Date.now();
+---
+
+<Base section="admin" title="Moderation" noindex viewer={viewer}>
+  <PageHead eyebrow="Moderators" title="Reported comments" lead="Comments with reports since their last review. Three reports hide a comment until someone here keeps or removes it." icon="flag" />
+  {
+    !auth ? (
+      <EmptyState title="Sign-in is not configured" icon="lock" bordered>
+        <p>This server runs without sign-in, so there is nothing to moderate.</p>
+      </EmptyState>
+    ) : !viewer ? (
+      <EmptyState title="Sign in first" icon="logIn" bordered>
+        <p>This page is for moderators.</p>
+        <a class="rw-btn rw-btn--primary rw-btn--sm" href={signInHref('/admin')}>Sign in</a>
+      </EmptyState>
+    ) : !moderator ? (
+      <EmptyState title="Moderators only" icon="lock" bordered>
+        <p>This page needs the moderator role on your RobyRew ID.</p>
+      </EmptyState>
+    ) : queue.length === 0 ? (
+      <EmptyState title="Nothing to review" icon="checkCircle" bordered>
+        <p>No comment has a report waiting.</p>
+      </EmptyState>
+    ) : (
+      <ol class="queue">
+        {queue.map(comment => (
+          <li class="rw-card queue__item">
+            <p class="queue__where">
+              On <a class="mono" href={`/v/${comment.release}#c-${comment.id}`}>{comment.release.split('/')[1]}</a>
+              <span>{Object.entries(comment.reasons).map(([reason, count]) => `${count}× ${REASONS[reason] ?? reason}`).join(', ')}</span>
+            </p>
+            <ol class="queue__comment"><CommentItem comment={comment} viewer={viewer} action={`/v/${comment.release}/act`} now={now} /></ol>
+          </li>
+        ))}
+      </ol>
+    )
+  }
+</Base>
+
+<style>
+  .queue {
+    display: grid;
+    gap: 0.9rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .queue__item {
+    padding: 1rem 1.1rem;
+  }
+  .queue__where {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
+    margin: 0 0 0.7rem;
+    color: var(--ink-3);
+    font-size: 0.86rem;
+  }
+  .queue__where a {
+    color: var(--ink);
+  }
+  .queue__comment {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+</style>

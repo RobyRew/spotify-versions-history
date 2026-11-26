@@ -7,7 +7,8 @@
  * come from another page's render.
  */
 import Icon from '@robyrew/ui/components/Icon.astro';
-import type { ReleaseView } from '../../../lib/site/model.ts';
+import type { ReleaseCounts, ReleaseView } from '../../../lib/site/model.ts';
+import { releaseKey } from '../../../lib/site/social.ts';
 import { formatDate } from '../lib/format.ts';
 import PlatformLabel from './PlatformLabel.astro';
 
@@ -15,9 +16,11 @@ interface Props {
   releases: readonly ReleaseView[];
   /** The newest release's version, marked "Latest". */
   latest?: string;
+  /** Community counts per release key; likes and comments show when there are any. */
+  counts?: ReadonlyMap<string, ReleaseCounts>;
 }
 
-const { releases, latest } = Astro.props;
+const { releases, latest, counts } = Astro.props;
 ---
 
 {
@@ -25,6 +28,7 @@ const { releases, latest } = Astro.props;
     const href = `/v/${release.product}/${release.version}`;
     const live = release.artifacts.filter(artifact => artifact.best).length;
     const build = release.fullVersion.slice(release.version.length + 1);
+    const count = counts?.get(releaseKey(release));
     return (
       <li class:list={['rl', { 'rl--signed': release.signed, 'rl--latest': release.version === latest }]}>
         <span class="rl__dot" aria-hidden="true" />
@@ -36,6 +40,8 @@ const { releases, latest } = Astro.props;
           <span class="rl__meta">
             {release.date ? <time datetime={release.date}>{formatDate(release.date)}</time> : <span>Date unknown</span>}
             {build && <span class="mono rl__build">{build}</span>}
+            {count && count.likes > 0 && <span class="rl__count" title="Likes"><Icon name="heart" size={12} />{count.likes}</span>}
+            {count && count.comments > 0 && <span class="rl__count" title="Comments"><Icon name="message" size={12} />{count.comments}</span>}
           </span>
         </div>
         <span class="rl__platforms">

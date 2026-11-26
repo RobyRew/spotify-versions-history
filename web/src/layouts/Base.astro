@@ -1,10 +1,12 @@
 ---
+import Avatar from '@robyrew/ui/components/Avatar.astro';
 import Icon from '@robyrew/ui/components/Icon.astro';
 import SiteHeader from '@robyrew/ui/components/SiteHeader.astro';
 import { themeBootstrap } from '@robyrew/web-config/theme-bootstrap';
+import { community, ID_SITE, signInHref, viewerOf, type SiteUser } from '../lib/community.ts';
 import '../styles/global.css';
 
-type Section = 'home' | 'versions' | 'probes' | 'api' | 'about' | 'release';
+type Section = 'home' | 'versions' | 'probes' | 'api' | 'about' | 'release' | 'admin';
 
 interface Props {
   title?: string;
@@ -12,6 +14,8 @@ interface Props {
   section: Section;
   /** Keep the page out of search engines. */
   noindex?: boolean;
+  /** The signed-in person when the page already looked them up; otherwise the layout does. */
+  viewer?: SiteUser | null;
 }
 
 const {
@@ -29,6 +33,9 @@ const links = [
   { label: 'About', href: '/about', current: section === 'about', icon: 'info' as const },
 ];
 const year = new Date().getUTCFullYear();
+const signInEnabled = community().auth !== null;
+const viewer = Astro.props.viewer !== undefined ? Astro.props.viewer : signInEnabled ? await viewerOf(Astro.request) : null;
+const returnTo = `${Astro.url.pathname}${Astro.url.search}`;
 ---
 
 <!doctype html>
@@ -60,7 +67,27 @@ const year = new Date().getUTCFullYear();
       mark="history"
       links={links}
       actions={[{ label: 'Source', href: 'https://github.com/RobyRew/spotify-versions-history', icon: 'code' }]}
-    />
+    >
+      {
+        signInEnabled && (
+          <div slot="account" class="account">
+            {viewer ? (
+              <>
+                <a class="account__me" href={ID_SITE} title={`Signed in as @${viewer.handle}: your RobyRew ID`}>
+                  <Avatar name={viewer.name ?? viewer.handle} src={viewer.avatar} size="sm" />
+                  <span class="account__handle">@{viewer.handle}</span>
+                </a>
+                <form class="account__out" method="post" action="/api/auth/sign-out">
+                  <button class="rw-btn rw-btn--icon rw-btn--sm" type="submit" aria-label="Sign out" title="Sign out"><Icon name="logOut" size={16} /></button>
+                </form>
+              </>
+            ) : (
+              <a class="rw-btn rw-btn--sm" href={signInHref(returnTo)}><Icon name="logIn" size={16} />Sign in</a>
+            )}
+          </div>
+        )
+      }
+    </SiteHeader>
     <main id="main" class="site-main">
       <slot />
     </main>
@@ -103,6 +130,33 @@ const year = new Date().getUTCFullYear();
 </html>
 
 <style>
+  .account {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .account__me {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.2rem 0.55rem 0.2rem 0.2rem;
+    border-radius: 999px;
+    color: var(--g-ink, var(--ink));
+    font-size: 0.86rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .account__me:hover {
+    background: var(--g-fill, var(--rw-fill));
+  }
+  .account__out {
+    margin: 0;
+  }
+  @media (max-width: 520px) {
+    .account__handle {
+      display: none;
+    }
+  }
   .site-footer {
     border-top: 1px solid var(--hair);
     background: var(--ground-2);

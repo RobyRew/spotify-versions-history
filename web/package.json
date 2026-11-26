@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "dev:local": "node scripts/dev-local.mjs",
     "build": "npm run check && astro build",
     "preview": "node ./dist/server/entry.mjs",
     "check": "astro sync && tsc --noEmit && node scripts/astro-check.mjs",
@@ -16,6 +17,8 @@
   },
   "dependencies": {
     "@astrojs/node": "^11.1.13",
+    "@logto/node": "^4.0.2",
+    "@robyrew/astro-logto": "github:RobyRew/astro-logto#v0.2.0",
     "astro": "^7.4.12",
     "gsap": "^3.15.1",
     "zod": "^4.6.7"

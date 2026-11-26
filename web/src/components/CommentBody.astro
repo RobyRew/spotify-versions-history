@@ -1,0 +1,69 @@
+---
+/**
+ * A comment's text: paragraphs with line breaks, `inline code`, fenced code blocks, and links to the
+ * allowlisted hosts (lib/site/social.ts). Every string is printed as text; nothing is parsed as HTML.
+ */
+import { parseComment } from '../../../lib/site/social.ts';
+
+interface Props {
+  body: string;
+}
+
+const blocks = parseComment(Astro.props.body);
+---
+
+<div class="cbody">
+  {
+    blocks.map(block =>
+      block.type === 'code' ? (
+        <pre class="cbody__code mono"><code>{block.text}</code></pre>
+      ) : (
+        <p>
+          {block.nodes.map(node =>
+            node.type === 'text' ? node.text
+            : node.type === 'code' ? <code class="mono">{node.text}</code>
+            : node.type === 'link' ? <a href={node.href} rel="nofollow ugc noopener noreferrer">{node.text}</a>
+            : <br />,
+          )}
+        </p>
+      ),
+    )
+  }
+</div>
+
+<style>
+  .cbody {
+    overflow-wrap: anywhere;
+  }
+  .cbody p {
+    margin: 0 0 0.5rem;
+    line-height: 1.55;
+  }
+  .cbody p:last-child {
+    margin-bottom: 0;
+  }
+  .cbody code {
+    padding: 0.08rem 0.32rem;
+    border-radius: 0.35rem;
+    background: var(--rw-fill);
+    font-size: 0.88em;
+  }
+  .cbody__code {
+    margin: 0 0 0.5rem;
+    padding: 0.7rem 0.85rem;
+    overflow-x: auto;
+    border: 1px solid var(--hair-soft);
+    border-radius: var(--rw-r-ctl);
+    background: var(--ground-2);
+    font-size: 0.84rem;
+    line-height: 1.5;
+    white-space: pre;
+  }
+  .cbody__code code {
+    padding: 0;
+    background: none;
+  }
+  .cbody a {
+    color: var(--accent);
+  }
+</style>

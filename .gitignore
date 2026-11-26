@@ -9,3 +9,4 @@ site/var/
 *.sqlite-wal
 dist-api/
 web/.data/
+web/data/

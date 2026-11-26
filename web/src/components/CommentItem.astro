@@ -1,0 +1,173 @@
+---
+/**
+ * One comment with what the viewer may do to it: react, reply (top level only), edit or delete (the
+ * author within 15 minutes, a moderator always), report (anyone else), and keep or remove (a
+ * moderator, once it has reports). Every action is a form posting to the release's /act endpoint;
+ * src/scripts/community.ts sends the same forms with fetch when script runs.
+ */
+import Comment from '@robyrew/ui/components/Comment.astro';
+import Composer from '@robyrew/ui/components/Composer.astro';
+import Icon from '@robyrew/ui/components/Icon.astro';
+import ReactionBar from '@robyrew/ui/components/ReactionBar.astro';
+import { fallbackHandle } from '@robyrew/astro-logto/handle';
+import type { CommentView } from '../../../lib/site/social-store.ts';
+import { COMMENT_MAX, EDIT_WINDOW_MS, REPORT_REASONS } from '../../../lib/site/social.ts';
+import type { SiteUser } from '../lib/community.ts';
+import CommentBody from './CommentBody.astro';
+
+interface Props {
+  comment: CommentView;
+  viewer: SiteUser | null;
+  /** The release's form endpoint. */
+  action: string;
+  now: number;
+}
+
+const { comment, viewer, action, now } = Astro.props;
+const mine = viewer !== null && viewer.id === comment.author.id;
+const live = !comment.deleted;
+const canChange = live && viewer !== null && (viewer.moderator || (mine && now - comment.createdAt <= EDIT_WINDOW_MS));
+const canReply = live && !comment.hidden && comment.parentId === null && viewer !== null && !viewer.suspended;
+const canReport = live && viewer !== null && !mine && !comment.hidden;
+const canReview = live && viewer?.moderator === true && (comment.hidden || comment.reports > 0);
+const handle = comment.author.deleted ? 'deleted' : (comment.author.handle ?? fallbackHandle(comment.author.id));
+const name = comment.author.deleted ? 'Deleted account' : (comment.author.name ?? undefined);
+const badge = comment.hidden ? 'Hidden after reports' : comment.author.moderator ? 'Moderator' : undefined;
+const REASON_LABELS: Record<(typeof REPORT_REASONS)[number], string> = { spam: 'Spam', abuse: 'Abuse or harassment', malware: 'A harmful or fake download', other: 'Something else' };
+const showReactions = live && !comment.hidden && (viewer !== null || comment.reactions.length > 0);
+---
+
+<Comment
+  as="li"
+  id={`c-${comment.id}`}
+  handle={handle}
+  name={name}
+  avatar={comment.author.avatar}
+  datetime={comment.createdAt}
+  edited={comment.editedAt !== null}
+  badge={badge}
+  deleted={comment.deleted}
+  class:list={{ 'comment--hidden': comment.hidden }}
+>
+  <CommentBody body={comment.body} />
+  {
+    live && (
+      <div slot="actions" class="cacts">
+        {showReactions && (
+          <ReactionBar
+            id={`react-c-${comment.id}`}
+            reactions={comment.reactions}
+            action={action}
+            fields={{ intent: 'comment-react', id: String(comment.id) }}
+            picker={viewer !== null}
+            readonly={viewer === null}
+            labels={{ group: 'Reactions to this comment' }}
+          />
+        )}
+        {canReply && (
+          <details class="cact">
+            <summary class="rw-btn rw-btn--plain rw-btn--sm"><Icon name="reply" size={15} />Reply</summary>
+            <Composer label={`Reply to @${handle}`} action={action} name="body" maxlength={COMMENT_MAX} submit="Reply" placeholder="Write a reply" busyLabel="Sending…">
+              <input type="hidden" name="intent" value="comment" />
+              <input type="hidden" name="parent" value={String(comment.id)} />
+            </Composer>
+          </details>
+        )}
+        {canChange && (
+          <details class="cact">
+            <summary class="rw-btn rw-btn--plain rw-btn--sm"><Icon name="pencil" size={15} />Edit</summary>
+            <Composer label="Edit the comment" action={action} name="body" value={comment.body} maxlength={COMMENT_MAX} submit="Save" busyLabel="Saving…">
+              <input type="hidden" name="intent" value="edit" />
+              <input type="hidden" name="id" value={String(comment.id)} />
+            </Composer>
+          </details>
+        )}
+        {canChange && (
+          <form class="cact-form" method="post" action={action} data-confirm="Delete this comment? This can’t be undone.">
+            <input type="hidden" name="intent" value="delete" />
+            <input type="hidden" name="id" value={String(comment.id)} />
+            <button class="rw-btn rw-btn--plain rw-btn--sm" type="submit"><Icon name="trash" size={15} />Delete</button>
+          </form>
+        )}
+        {canReport && (
+          <details class="cact">
+            <summary class="rw-btn rw-btn--plain rw-btn--sm"><Icon name="flag" size={15} />Report</summary>
+            <form class="cact-report" method="post" action={action}>
+              <input type="hidden" name="intent" value="report" />
+              <input type="hidden" name="id" value={String(comment.id)} />
+              <label class="rw-label" for={`reason-${comment.id}`}>Why should a moderator look at it?</label>
+              <select class="rw-field" id={`reason-${comment.id}`} name="reason" required>
+                {REPORT_REASONS.map(reason => <option value={reason}>{REASON_LABELS[reason]}</option>)}
+              </select>
+              <button class="rw-btn rw-btn--sm" type="submit">Send report</button>
+            </form>
+          </details>
+        )}
+        {canReview && (
+          <form class="cact-form cact-review" method="post" action={action}>
+            <input type="hidden" name="intent" value="review" />
+            <input type="hidden" name="id" value={String(comment.id)} />
+            <span class="rw-badge rw-badge--warn">{comment.reports} {comment.reports === 1 ? 'report' : 'reports'}</span>
+            <button class="rw-btn rw-btn--sm" type="submit" name="keep" value="1">Keep</button>
+            <button class="rw-btn rw-btn--sm rw-btn--danger" type="submit" name="keep" value="0">Remove</button>
+          </form>
+        )}
+      </div>
+    )
+  }
+  {
+    comment.replies.length > 0 && (
+      <Fragment slot="replies">
+        {comment.replies.map(reply => <Astro.self comment={reply} viewer={viewer} action={action} now={now} />)}
+      </Fragment>
+    )
+  }
+</Comment>
+
+<style>
+  .cacts {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+  }
+  .cact > summary {
+    list-style: none;
+  }
+  .cact > summary::-webkit-details-marker {
+    display: none;
+  }
+  .cact[open] {
+    flex-basis: 100%;
+  }
+  .cact[open] > summary {
+    margin-bottom: 0.5rem;
+  }
+  .cact[open] :global(.rw-composer) {
+    width: 100%;
+    max-width: 44rem;
+  }
+  .cact-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+  }
+  .cact-report {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .cact-report .rw-label {
+    flex-basis: 100%;
+  }
+  .cact-report select {
+    flex: 1 1 14rem;
+    max-width: 20rem;
+  }
+  :global(.comment--hidden) > :global(.rw-comment__main) {
+    opacity: 0.75;
+  }
+</style>
