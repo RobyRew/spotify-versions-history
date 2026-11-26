@@ -28,6 +28,8 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
+          # The action's default Wrangler is older and warns on deploy.
+          wranglerVersion: '4.168.0'
           command: deploy
       - name: Nothing to deploy with
         if: env.HAS_TOKEN != 'true'
