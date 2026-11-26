@@ -1,13 +1,20 @@
 ---
-import CopyField from '@robyrew/ui/components/CopyField.astro';
+/**
+ * The home page, in the order people come for: the build for their system, every platform's newest
+ * build, what the community likes and says, then the newest releases. The archive's own numbers are
+ * one quiet line under the hero; the details live on /probes, /about and /api.
+ */
+import Avatar from '@robyrew/ui/components/Avatar.astro';
 import Icon from '@robyrew/ui/components/Icon.astro';
 import StatusDot from '@robyrew/ui/components/StatusDot.astro';
+import { fallbackHandle } from '@robyrew/astro-logto/handle';
 import Base from '../layouts/Base.astro';
 import DownloadButton from '../components/DownloadButton.astro';
 import PlatformCard from '../components/PlatformCard.astro';
-import PlatformLabel from '../components/PlatformLabel.astro';
 import ReleaseItems from '../components/ReleaseItems.astro';
-import { ARCH_LABELS, latestDownloads, PLATFORM_LABELS, releaseJson, type Platform } from '../../../lib/site/model.ts';
+import { ARCH_LABELS, findRelease, latestDownloads, PLATFORM_LABELS, type Platform } from '../../../lib/site/model.ts';
+import { releaseKey } from '../../../lib/site/social.ts';
+import { community, releaseCounts } from '../lib/community.ts';
 import { siteData } from '../lib/data.ts';
 import { deviceFromHeaders } from '../lib/device.ts';
 import { formatBytes, formatDate, formatDateTime } from '../lib/format.ts';
@@ -15,9 +22,9 @@ import { formatBytes, formatDate, formatDateTime } from '../lib/format.ts';
 const data = await siteData();
 const latest = latestDownloads(data.releases);
 const newest = data.releases[0] ?? null;
-const oldest = data.releases.at(-1) ?? null;
-const recent = data.releases.slice(0, 8);
+const recent = data.releases.slice(0, 6);
 const device = deviceFromHeaders(Astro.request.headers);
+const counts = releaseCounts('all');
 
 const DESKTOP: readonly Platform[] = ['windows', 'macos', 'linux'];
 const cards = DESKTOP.map(platform => ({
@@ -29,23 +36,10 @@ const cards = DESKTOP.map(platform => ({
 // The hero's download: the visitor's system and architecture, else that system's first build.
 const mine = device ? (latest.find(entry => entry.platform === device.platform && entry.arch === device.arch) ?? latest.find(entry => entry.platform === device.platform) ?? null) : null;
 
+// The one status line.
 const verified = data.verification?.artifacts ?? [];
 const signed = verified.filter(artifact => artifact.ok && artifact.level === 'signed').length;
 const notOk = verified.filter(artifact => !artifact.ok).length;
-const summary = data.health?.summary;
-const tally = (providers: readonly (keyof NonNullable<typeof summary>)[]) => {
-  let ok = 0;
-  let checked = 0;
-  for (const provider of providers) {
-    for (const [status, count] of Object.entries(summary?.[provider] ?? {})) {
-      if (status === 'not-checked') continue;
-      checked += count;
-      if (status === 'ok') ok += count;
-    }
-  }
-  return { ok, checked };
-};
-const links = summary ? tally(['spotify-current', 'spotify-signed', 'spotify-apt', 'snap', 'loadspot']) : null;
 const probedAt = data.health?.generatedAt ?? data.verification?.generatedAt ?? null;
 
 const mobile = data.mobile as { ios?: { version?: string; releaseDate?: string; listing?: string }; windowsStore?: { lastUpdate?: string; listing?: string } } | null;
@@ -55,98 +49,62 @@ const stores = [
 ];
 const msStore = { date: mobile?.windowsStore?.lastUpdate ?? null, href: mobile?.windowsStore?.listing ?? 'https://apps.microsoft.com/detail/9ncbcszsjrsb' };
 
-// The API teaser shows part of the real answer for Windows x64.
-const sample = latest.find(entry => entry.platform === 'windows' && entry.arch === 'x64') ?? latest[0] ?? null;
-const sampleArtifact = sample ? releaseJson(sample.release).artifacts.find(item => item.id === sample.artifact.id) : null;
-const sampleJson = sample && sampleArtifact
-  ? JSON.stringify({ platform: sample.platform, arch: sample.arch, version: sample.release.version, date: sample.release.date, artifact: { format: sampleArtifact.format, size: sampleArtifact.size, sha256: sampleArtifact.sha256, download: sampleArtifact.download ? { label: sampleArtifact.download.label, kind: sampleArtifact.download.kind } : null } }, null, 2)
-  : null;
-const samplePath = sample ? `/api/v2/latest/${sample.platform}/${sample.arch}` : '/api/v2/latest';
+// Community: the most liked releases this week (all time when the week has none), and the newest comments.
+const weekly = releaseCounts('week');
+const byLikes = (source: typeof counts) => data.releases
+  .map(release => ({ release, likes: source.get(releaseKey(release))?.likes ?? 0, comments: counts.get(releaseKey(release))?.comments ?? 0 }))
+  .filter(item => item.likes > 0)
+  .sort((a, b) => b.likes - a.likes)
+  .slice(0, 5);
+const weekTop = byLikes(weekly);
+const topLiked = weekTop.length > 0 ? weekTop : byLikes(counts);
+const topPeriod = weekTop.length > 0 ? 'week' : 'all';
+const latestComments = community().store.recentComments(5).map(comment => ({
+  ...comment,
+  releaseView: findRelease(data.releases, comment.release.split('/')[0] ?? '', comment.release.split('/')[1] ?? ''),
+  snippet: comment.body.length > 160 ? `${comment.body.slice(0, 157).trimEnd()}…` : comment.body,
+}));
+const quiet = topLiked.length === 0 && latestComments.length === 0;
+const AGO = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+const ago = (ms: number) => {
+  const minutes = Math.round((ms - Date.now()) / 60_000);
+  if (Math.abs(minutes) < 60) return AGO.format(minutes, 'minute');
+  const hours = Math.round(minutes / 60);
+  return Math.abs(hours) < 48 ? AGO.format(hours, 'hour') : AGO.format(Math.round(hours / 24), 'day');
+};
 ---
 
 <Base section="home">
   <section class="hero" aria-labelledby="hero-title">
-    <div class="hero__copy">
-      <p class="pill" data-hero><Icon name="shield" size={14} /> Official, unmodified builds only</p>
-      <h1 id="hero-title" class="hero__title" data-hero>Every official Spotify build, <span class="hero__accent">in one place.</span></h1>
-      <p class="hero__lead" data-hero>
-        Spotify’s own installers for Windows, macOS and Linux, followed across its CDN, its apt repository, the Snap
-        Store and the Microsoft Store. Every build the archive sees is kept, and every file says whether its signature
-        has been checked.
-      </p>
-      <div class="hero__ctas" data-hero>
-        {
-          mine && (
-            <DownloadButton
-              artifact={mine.artifact}
-              version={mine.release.version}
-              size="lg"
-              label={`Download for ${PLATFORM_LABELS[mine.platform]}`}
-            />
-          )
-        }
-        <a class:list={['rw-btn', 'rw-btn--lg', { 'rw-btn--primary': !mine }]} href="/versions">
-          <Icon name="history" size={18} />Browse {data.releases.length} versions
-        </a>
-      </div>
-      {
-        mine && (
-          <p class="hero__for" data-hero>
-            <span class="mono">{mine.release.version}</span> · {ARCH_LABELS[mine.arch]} · {formatBytes(mine.artifact.size)}.
-            Not your system? <a href="#latest">Every platform</a>
-          </p>
-        )
-      }
-      <ul class="hero__trust" data-hero>
-        <li><Icon name="shield" size={16} /> Current builds checked daily</li>
-        <li><Icon name="lock" size={16} /> Publisher identities pinned</li>
-        <li><Icon name="braces" size={16} /> Open JSON API</li>
-      </ul>
+    <p class="pill" data-hero><Icon name="shield" size={14} /> Official, unmodified builds only</p>
+    <h1 id="hero-title" class="hero__title" data-hero>Every official Spotify build, <span class="hero__accent">in one place.</span></h1>
+    <p class="hero__lead" data-hero>Spotify’s own installers for every system, kept build by build, each file marked with whether its signature was checked.</p>
+    <div class="hero__ctas" data-hero>
+      {mine && <DownloadButton artifact={mine.artifact} version={mine.release.version} size="lg" label={`Download for ${PLATFORM_LABELS[mine.platform]}`} />}
+      <a class:list={['rw-btn', 'rw-btn--lg', { 'rw-btn--primary': !mine }]} href="/versions"><Icon name="history" size={18} />Browse {data.releases.length} versions</a>
     </div>
-
-    <aside class="rw-card now" aria-label="The archive now" data-hero-panel>
-      {
-        newest && (
-          <div class="now__newest">
-            <p class="now__label">Newest build</p>
-            <a class="now__version mono" href={`/v/${newest.product}/${newest.version}`} data-vt-release={`/v/${newest.product}/${newest.version}`}>{newest.version}</a>
-            <p class="now__meta">
-              {formatDate(newest.date)}
-              <span class="now__platforms">{newest.platforms.map(platform => <PlatformLabel platform={platform} compact />)}</span>
-            </p>
-          </div>
-        )
-      }
-      <dl class="now__stats">
-        <div>
-          <dt>Versions archived</dt>
-          <dd><span data-count={data.releases.length}>{data.releases.length}</span></dd>
-          {oldest && <dd class="now__sub">back to <span class="mono">{oldest.version}</span></dd>}
-        </div>
-        <div>
-          <dt>Current builds signed</dt>
-          <dd>{data.verification ? <><span data-count={signed}>{signed}</span><small>/{verified.length}</small></> : '—'}</dd>
-          <dd class="now__sub">{data.verification ? 'on Linux, macOS and Windows' : 'no report yet'}</dd>
-        </div>
-        <div>
-          <dt>Links answering</dt>
-          <dd>{links ? <><span data-count={links.ok}>{links.ok}</span><small>/{links.checked}</small></> : '—'}</dd>
-          <dd class="now__sub">{links ? 'Spotify, stores and mirror' : 'no check yet'}</dd>
-        </div>
-      </dl>
-      <a class="now__foot" href="/probes">
-        <StatusDot status={!data.verification && !summary ? 'unknown' : notOk ? 'danger' : 'ok'} hideLabel pulse={Boolean(data.verification) && !notOk} />
-        <span>{probedAt ? `Probes ran ${formatDateTime(probedAt)}` : 'The probes have not reported yet'}</span>
-        <Icon name="arrowRight" size={15} />
-      </a>
-    </aside>
+    {
+      mine && (
+        <p class="hero__for" data-hero>
+          <span class="mono">{mine.release.version}</span> · {ARCH_LABELS[mine.arch]} · {formatBytes(mine.artifact.size)}. Not your system? <a href="#latest">Every platform</a>
+        </p>
+      )
+    }
+    <a class="status" href="/probes" data-hero>
+      <StatusDot status={!data.verification && !data.health ? 'unknown' : notOk ? 'danger' : 'ok'} hideLabel />
+      <span>
+        {data.verification ? `${signed} of ${verified.length} current builds signed` : 'No verification report yet'}
+        {probedAt && <span class="status__when"> · probes ran {formatDateTime(probedAt)}</span>}
+      </span>
+      <Icon name="arrowRight" size={14} />
+    </a>
   </section>
 
-  <div class="section-head" id="latest"><h2>Latest for each platform</h2><a href="/versions">All versions</a></div>
+  <div class="section-head" id="latest"><h2>Download</h2><a href="/versions">All versions</a></div>
   <div class="cards">
     {
       cards.map(card => (
-        <PlatformCard platform={card.platform} entries={card.entries} device={device} releases={card.releases}>
+        <PlatformCard platform={card.platform} entries={card.entries} device={device} releases={card.releases} counts={counts}>
           {card.platform === 'windows' && (
             <a slot="extra" class="pstore" href={msStore.href} rel="noopener">
               <span class="pstore__mark" aria-hidden="true"><Icon name="store" size={18} /></span>
@@ -161,9 +119,6 @@ const samplePath = sample ? `/api/v2/latest/${sample.platform}/${sample.arch}` :
       ))
     }
   </div>
-
-  <div class="section-head"><h2>Phones and tablets</h2></div>
-  <p class="section-note">These builds install only through their store, so the archive records their versions and links to the listing.</p>
   <div class="stores">
     {
       stores.map(store => (
@@ -179,75 +134,90 @@ const samplePath = sample ? `/api/v2/latest/${sample.platform}/${sample.arch}` :
     }
   </div>
 
+  <div class="section-head" id="community"><h2>Community</h2><a href="/versions?sort=active">Recently active</a></div>
+  {
+    quiet ? (
+      <div class="rw-card invite reveal">
+        <span class="invite__mark" aria-hidden="true"><Icon name="message" size={22} /></span>
+        <div>
+          <p class="invite__title">No likes or comments yet</p>
+          <p class="invite__text">Tell others whether a build starts, signs in and plays: open a release, like it, react or leave a note.</p>
+        </div>
+        {newest && <a class="rw-btn rw-btn--primary" href={`/v/${newest.product}/${newest.version}#community`}>Open the newest build</a>}
+      </div>
+    ) : (
+      <div class="social">
+        <section class="rw-card social__col reveal" aria-labelledby="top-liked">
+          <header class="social__head">
+            <h3 id="top-liked"><Icon name="heart" size={16} />Most liked {topPeriod === 'week' ? 'this week' : ''}</h3>
+            <a href={`/versions?sort=liked${topPeriod === 'week' ? '&period=week' : ''}`}>See all</a>
+          </header>
+          {topLiked.length === 0 ? (
+            <p class="social__empty">No likes yet.</p>
+          ) : (
+            <ol class="top">
+              {topLiked.map((item, index) => (
+                <li>
+                  <span class="top__rank">{index + 1}</span>
+                  <a class="top__version mono" href={`/v/${item.release.product}/${item.release.version}#community`}>{item.release.version}</a>
+                  <span class="top__date">{formatDate(item.release.date)}</span>
+                  <span class="top__counts"><Icon name="heart" size={13} />{item.likes}<Icon name="message" size={13} />{item.comments}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+        <section class="rw-card social__col reveal" aria-labelledby="latest-comments">
+          <header class="social__head">
+            <h3 id="latest-comments"><Icon name="message" size={16} />Latest comments</h3>
+            <a href="/versions?sort=active">All activity</a>
+          </header>
+          {latestComments.length === 0 ? (
+            <p class="social__empty">No comments yet.</p>
+          ) : (
+            <ol class="said">
+              {latestComments.map(comment => {
+                const handle = comment.author.deleted ? 'deleted' : (comment.author.handle ?? fallbackHandle(comment.author.id));
+                return (
+                  <li>
+                    <Avatar name={comment.author.name ?? handle} src={comment.author.avatar} size="sm" />
+                    <div class="said__main">
+                      <p class="said__head">
+                        <strong>{comment.author.deleted ? 'Deleted account' : `@${handle}`}</strong>
+                        <span>on <a class="mono" href={`/v/${comment.release}#c-${comment.id}`}>{comment.releaseView?.version ?? comment.release.split('/')[1]}</a></span>
+                        <time datetime={new Date(comment.createdAt).toISOString()}>{ago(comment.createdAt)}</time>
+                      </p>
+                      <p class="said__text">{comment.snippet}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </section>
+      </div>
+    )
+  }
+
   <div class="section-head"><h2>Recent releases</h2><a href="/versions">All {data.releases.length}</a></div>
   <ol class="rw-card rl-list reveal" aria-label="Recent releases">
-    <ReleaseItems releases={recent} latest={newest?.version} />
+    <ReleaseItems releases={recent} latest={newest?.version} counts={counts} />
   </ol>
-
-  <div class="section-head"><h2>How a build is checked</h2><a href="/about">The details</a></div>
-  <ol class="how">
-    <li class="rw-card how__item reveal">
-      <span class="how__step" aria-hidden="true">1</span>
-      <span class="how__mark" aria-hidden="true"><Icon name="shield" size={20} /></span>
-      <h3>Its own signature</h3>
-      <p>Authenticode for Windows, codesign and notarization for macOS, the signed apt index for Debian, Canonical’s assertions for snaps, Microsoft’s package signature for the Store.</p>
-    </li>
-    <li class="rw-card how__item reveal">
-      <span class="how__step" aria-hidden="true">2</span>
-      <span class="how__mark" aria-hidden="true"><Icon name="layers" size={20} /></span>
-      <h3>Two implementations</h3>
-      <p>Every signature is checked in code this archive owns and again with the platform’s own tools on Linux, macOS and Windows; the hosts must agree on every byte.</p>
-    </li>
-    <li class="rw-card how__item reveal">
-      <span class="how__step" aria-hidden="true">3</span>
-      <span class="how__mark" aria-hidden="true"><Icon name="lock" size={20} /></span>
-      <h3>Pinned identities</h3>
-      <p>Spotify’s signer, Apple team, apt key and Store publisher are written down with where they were read from. A changed identity fails until someone reviews it.</p>
-    </li>
-  </ol>
-
-  <div class="section-head"><h2>Use it from code</h2><a href="/api">API reference</a></div>
-  <div class="rw-card api reveal">
-    <div class="api__copy">
-      <p>The same data is JSON for your scripts, with an ETag on every answer. The newest {sample ? `${PLATFORM_LABELS[sample.platform]} ${ARCH_LABELS[sample.arch]}` : ''} build, for instance:</p>
-      <CopyField value={`curl ${new URL(samplePath, Astro.site).href}`} truncate />
-    </div>
-    {
-      sampleJson && (
-        <figure class="api__sample">
-          <figcaption>Part of the answer</figcaption>
-          <pre class="mono">{sampleJson}</pre>
-        </figure>
-      )
-    }
-  </div>
 </Base>
 
 <script>
-  import { countUp, heroIn, revealOnScroll } from '../scripts/motion.ts';
+  import { heroIn, revealOnScroll } from '../scripts/motion.ts';
   heroIn();
-  countUp('[data-count]');
   revealOnScroll('.reveal');
 </script>
 
 <style>
   .hero {
-    display: grid;
-    gap: 2rem;
-    align-items: center;
-    padding: clamp(1.25rem, 4vw, 3.25rem) 0 0.5rem;
-  }
-  @media (min-width: 960px) {
-    .hero {
-      grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 1fr);
-      gap: 3rem;
-    }
-  }
-  .hero__copy {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 1.1rem;
+    gap: 0.95rem;
+    padding: clamp(1rem, 3vw, 2.4rem) 0 0.25rem;
   }
   .pill {
     display: inline-flex;
@@ -267,10 +237,10 @@ const samplePath = sample ? `/api/v2/latest/${sample.platform}/${sample.arch}` :
   }
   .hero__title {
     margin: 0;
-    max-width: 15ch;
-    font-size: clamp(2.3rem, 1.2rem + 4.2vw, 4rem);
+    max-width: 18ch;
+    font-size: clamp(2.1rem, 1.2rem + 3.4vw, 3.4rem);
     font-weight: 800;
-    line-height: 1.02;
+    line-height: 1.03;
     letter-spacing: -0.045em;
     text-wrap: balance;
   }
@@ -278,146 +248,35 @@ const samplePath = sample ? `/api/v2/latest/${sample.platform}/${sample.arch}` :
     color: var(--accent);
   }
   .hero__lead {
-    max-width: 36rem;
+    max-width: 40rem;
     margin: 0;
     color: var(--ink-2);
-    font-size: clamp(1.02rem, 0.9vw + 0.8rem, 1.15rem);
-    line-height: 1.6;
+    font-size: clamp(1rem, 0.6vw + 0.85rem, 1.12rem);
+    line-height: 1.55;
   }
   .hero__ctas {
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
-    margin-top: 0.3rem;
+    margin-top: 0.2rem;
   }
   .hero__for {
-    margin: -0.4rem 0 0;
+    margin: -0.35rem 0 0;
     color: var(--ink-3);
     font-size: 0.86rem;
   }
   .hero__for a {
     color: var(--ink-2);
   }
-  .hero__trust {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.2rem;
-    margin: 0.2rem 0 0;
-    padding: 0;
-    list-style: none;
-    color: var(--ink-3);
-    font-size: 0.86rem;
-    font-weight: 600;
-  }
-  .hero__trust li {
+  .status {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-  }
-  .hero__trust :global(svg) {
-    color: var(--accent);
-  }
-
-  .now {
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
-  }
-  .now__newest {
-    padding: 1.2rem 1.3rem 1rem;
-    background: linear-gradient(160deg, var(--accent-soft), transparent 70%);
-  }
-  .now__label,
-  .now__stats dt {
-    margin: 0;
+    gap: 0.55rem;
     color: var(--ink-3);
-    font-size: 0.75rem;
-    font-weight: 650;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  .now__version {
-    display: inline-block;
-    margin-top: 0.3rem;
-    color: var(--ink);
-    font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.2rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
+    font-size: 0.84rem;
     text-decoration: none;
   }
-  .now__version:hover {
-    color: var(--accent);
-  }
-  .now__meta {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    margin: 0.2rem 0 0;
-    color: var(--ink-2);
-    font-size: 0.9rem;
-  }
-  .now__platforms {
-    display: inline-flex;
-    gap: 0.45rem;
-  }
-  .now__stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin: 0;
-    border-top: 1px solid var(--hair-soft);
-  }
-  .now__stats > div {
-    padding: 1rem 1.3rem;
-  }
-  .now__stats > div + div {
-    border-left: 1px solid var(--hair-soft);
-  }
-  .now__stats dd {
-    margin: 0.35rem 0 0;
-    font-size: 1.6rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
-  .now__stats dd small {
-    color: var(--ink-3);
-    font-size: 0.6em;
-    font-weight: 600;
-  }
-  .now__stats .now__sub {
-    margin-top: 0.15rem;
-    color: var(--ink-3);
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0;
-  }
-  @media (max-width: 479px) {
-    .now__stats > div {
-      padding: 0.85rem 0.9rem;
-    }
-    .now__stats dd {
-      font-size: 1.3rem;
-    }
-    .now__stats .now__sub {
-      display: none;
-    }
-  }
-  .now__foot {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-top: auto;
-    padding: 0.8rem 1.3rem;
-    border-top: 1px solid var(--hair-soft);
-    color: var(--ink-2);
-    font-size: 0.86rem;
-    text-decoration: none;
-  }
-  .now__foot span {
-    flex: 1;
-  }
-  .now__foot:hover {
+  .status:hover {
     color: var(--accent);
   }
 
@@ -473,15 +332,11 @@ const samplePath = sample ? `/api/v2/latest/${sample.platform}/${sample.arch}` :
     color: var(--ink-3);
     font-size: 0.8rem;
   }
-  .section-note {
-    margin: -0.4rem 0 0.9rem;
-    color: var(--ink-3);
-    font-size: 0.9rem;
-  }
   .stores {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
     gap: 0.9rem;
+    margin-top: 0.9rem;
   }
   .store {
     display: flex;
@@ -511,89 +366,143 @@ const samplePath = sample ? `/api/v2/latest/${sample.platform}/${sample.arch}` :
     font-size: 0.84rem;
   }
 
-  .how {
+  .invite {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.9rem 1.2rem;
+    padding: 1.1rem 1.2rem;
+  }
+  .invite > div {
+    flex: 1 1 18rem;
+  }
+  .invite__mark {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    place-items: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 0.9rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .invite__title {
+    margin: 0;
+    font-weight: 650;
+  }
+  .invite__text {
+    margin: 0.2rem 0 0;
+    color: var(--ink-2);
+    font-size: 0.92rem;
+  }
+  .social {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
     gap: 0.9rem;
+  }
+  .social__col {
+    padding: 0.4rem 0 0.6rem;
+  }
+  .social__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 1.1rem 0.5rem;
+  }
+  .social__head h3 {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 650;
+  }
+  .social__head h3 :global(svg) {
+    color: var(--accent);
+  }
+  .social__head a {
+    color: var(--ink-2);
+    font-size: 0.86rem;
+    text-decoration: none;
+  }
+  .social__head a:hover {
+    color: var(--accent);
+  }
+  .social__empty {
+    margin: 0;
+    padding: 0.5rem 1.1rem 0.6rem;
+    color: var(--ink-3);
+    font-size: 0.9rem;
+  }
+  .top,
+  .said {
     margin: 0;
     padding: 0;
     list-style: none;
   }
-  .how__item {
-    position: relative;
-    padding: 1.2rem 1.3rem;
-  }
-  .how__step {
-    position: absolute;
-    top: 1rem;
-    right: 1.2rem;
-    color: var(--ink-3);
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    opacity: 0.35;
-  }
-  .how__mark {
+  .top li {
     display: grid;
-    place-items: center;
-    width: 2.4rem;
-    height: 2.4rem;
-    border-radius: 0.75rem;
-    background: var(--accent-soft);
+    grid-template-columns: 1.6rem minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.55rem 1.1rem;
+    border-top: 1px solid var(--hair-soft);
+  }
+  .top__rank {
+    color: var(--ink-3);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .top__version {
+    color: var(--ink);
+    font-weight: 650;
+    text-decoration: none;
+  }
+  .top__version:hover {
     color: var(--accent);
   }
-  .how__item h3 {
-    margin: 0.8rem 0 0.35rem;
-    font-size: 1rem;
-  }
-  .how__item p {
-    margin: 0;
-    color: var(--ink-2);
-    font-size: 0.92rem;
-    line-height: 1.5;
-  }
-
-  .api {
-    display: grid;
-    gap: 1.2rem;
-    padding: 1.2rem 1.3rem;
-  }
-  @media (min-width: 900px) {
-    .api {
-      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-      align-items: start;
-    }
-  }
-  .api__copy {
-    display: grid;
-    gap: 0.8rem;
-  }
-  .api__copy p {
-    margin: 0;
-    color: var(--ink-2);
-    line-height: 1.55;
-  }
-  .api__sample {
-    margin: 0;
-    min-width: 0;
-  }
-  .api__sample figcaption {
-    margin-bottom: 0.4rem;
+  .top__date {
     color: var(--ink-3);
-    font-size: 0.75rem;
-    font-weight: 650;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-size: 0.82rem;
   }
-  .api__sample pre {
-    margin: 0;
-    padding: 0.9rem 1rem;
-    overflow-x: auto;
-    border: 1px solid var(--hair-soft);
-    border-radius: var(--rw-r-ctl);
-    background: var(--ground-2);
+  .top__counts {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     color: var(--ink-2);
-    font-size: 0.8rem;
-    line-height: 1.55;
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .top__counts :global(svg:nth-of-type(2)) {
+    margin-left: 0.5rem;
+  }
+  .said li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.7rem;
+    padding: 0.65rem 1.1rem;
+    border-top: 1px solid var(--hair-soft);
+  }
+  .said__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.5rem;
+    margin: 0;
+    font-size: 0.86rem;
+  }
+  .said__head span,
+  .said__head time {
+    color: var(--ink-3);
+  }
+  .said__head a {
+    color: var(--ink-2);
+  }
+  .said__text {
+    margin: 0.2rem 0 0;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
   }
 </style>

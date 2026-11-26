@@ -3,12 +3,14 @@ import ActiveFilters from '@robyrew/ui/components/ActiveFilters.astro';
 import ChipSelect from '@robyrew/ui/components/ChipSelect.astro';
 import EmptyState from '@robyrew/ui/components/EmptyState.astro';
 import FilterChip from '@robyrew/ui/components/FilterChip.astro';
+import Icon from '@robyrew/ui/components/Icon.astro';
 import LoadMore from '@robyrew/ui/components/LoadMore.astro';
 import PageHead from '@robyrew/ui/components/PageHead.astro';
 import SearchField from '@robyrew/ui/components/SearchField.astro';
 import Base from '../layouts/Base.astro';
 import ReleaseItems from '../components/ReleaseItems.astro';
 import { ARCH_LABELS, filterReleases, isReleaseSort, page, PLATFORM_LABELS, type Arch, type Platform } from '../../../lib/site/model.ts';
+import { isPeriod, type Period } from '../../../lib/site/social-store.ts';
 import { releaseCounts } from '../lib/community.ts';
 import { siteData } from '../lib/data.ts';
 import { withParam } from '../lib/format.ts';
@@ -22,13 +24,33 @@ const platform = platforms.includes(params.get('platform') as Platform) ? (param
 const arch = arches.includes(params.get('arch') as Arch) ? (params.get('arch') as Arch) : null;
 const sortParam = params.get('sort');
 const sort = isReleaseSort(sortParam) ? sortParam : 'newest';
-// Downloads, likes and comments per release, for the metric sorts and the rows' counts.
-const counts = releaseCounts();
+// Likes, comments and downloads per release in the chosen window; the window applies to the metric
+// sorts, the "With comments" filter and the counts on the rows.
+const periodParam = params.get('period');
+const period: Period = isPeriod(periodParam) ? periodParam : 'all';
+const counts = releaseCounts(period);
 const q = (params.get('q') ?? '').slice(0, 64);
 const signed = params.get('signed') === '1';
 const live = params.get('live') === '1';
+const commented = params.get('commented') === '1';
 
-const matches = filterReleases(data.releases, { q, platform, arch, sort, signed, downloadable: live, counts });
+const matches = filterReleases(data.releases, { q, platform, arch, sort, signed, downloadable: live, counts, commented });
+const SORTS = [
+  { id: 'newest', label: 'Newest', icon: 'history' },
+  { id: 'liked', label: 'Most liked', icon: 'heart' },
+  { id: 'discussed', label: 'Most discussed', icon: 'message' },
+  { id: 'downloads', label: 'Most downloaded', icon: 'download' },
+  { id: 'active', label: 'Recently active', icon: 'activity' },
+  { id: 'oldest', label: 'Oldest', icon: 'sort' },
+] as const;
+const PERIODS: readonly { id: Period; label: string; words: string }[] = [
+  { id: 'day', label: 'Today', words: 'today' },
+  { id: 'week', label: 'This week', words: 'this week' },
+  { id: 'month', label: 'This month', words: 'this month' },
+  { id: 'all', label: 'All time', words: '' },
+];
+const periodWords = PERIODS.find(item => item.id === period)?.words ?? '';
+const usesPeriod = sort === 'liked' || sort === 'discussed' || sort === 'downloads' || commented;
 const { items, next } = page(matches, params.get('cursor'), PAGE_SIZE);
 const nextHref = next ? (() => { const url = new URL(Astro.url); url.searchParams.set('cursor', next); return `${url.pathname}${url.search}`; })() : null;
 const shown = Math.min(matches.length, Number(params.get('cursor') ?? 0) + items.length);
@@ -39,6 +61,7 @@ const active = [
   ...(arch ? [{ label: ARCH_LABELS[arch], href: withParam(Astro.url, 'arch', null) }] : []),
   ...(signed ? [{ label: 'Signed', href: withParam(Astro.url, 'signed', null) }] : []),
   ...(live ? [{ label: 'Live links', href: withParam(Astro.url, 'live', null) }] : []),
+  ...(commented ? [{ label: 'With comments', href: withParam(Astro.url, 'commented', null) }] : []),
 ];
 ---
 
@@ -50,7 +73,26 @@ const active = [
     icon="history"
   />
 
+  <nav class="sorts" aria-label="Order">
+    {SORTS.map(item => (
+      <a class:list={['sorts__tab', { 'is-on': sort === item.id }]} href={withParam(Astro.url, 'sort', item.id === 'newest' ? null : item.id)} aria-current={sort === item.id ? 'page' : undefined}>
+        <Icon name={item.icon} size={15} />{item.label}
+      </a>
+    ))}
+  </nav>
+  {
+    usesPeriod && (
+      <nav class="periods" aria-label="Counted over">
+        {PERIODS.map(item => (
+          <a class:list={['periods__tab', { 'is-on': period === item.id }]} href={withParam(Astro.url, 'period', item.id === 'all' ? null : item.id)} aria-current={period === item.id ? 'page' : undefined}>{item.label}</a>
+        ))}
+      </nav>
+    )
+  }
+
   <form class="filters" method="get" action="/versions" role="search" aria-label="Filter versions">
+    {sort !== 'newest' && <input type="hidden" name="sort" value={sort} />}
+    {period !== 'all' && <input type="hidden" name="period" value={period} />}
     <SearchField label="Search versions" name="q" value={q} placeholder="1.3.10 or a build hash" shortcut="/" />
     <ChipSelect label="Platform" name="platform" icon="monitor" autosubmit value={platform ?? ''}
       options={[['', 'All platforms'], ...platforms.map(value => [value, PLATFORM_LABELS[value]] as [string, string])]} />
@@ -58,8 +100,7 @@ const active = [
       options={[['', 'All architectures'], ...arches.map(value => [value, ARCH_LABELS[value]] as [string, string])]} />
     <FilterChip label="Signed" name="signed" value="1" checked={signed} icon="shield" autosubmit />
     <FilterChip label="Live links" name="live" value="1" checked={live} icon="download" autosubmit />
-    <ChipSelect label="Sort" name="sort" icon="sort" neutral autosubmit value={sort}
-      options={[['newest', 'Newest first'], ['oldest', 'Oldest first'], ['downloads', 'Most downloaded'], ['trending', 'Trending this week'], ['liked', 'Most liked'], ['discussed', 'Most discussed']]} />
+    <FilterChip label="With comments" name="commented" value="1" checked={commented} icon="message" autosubmit />
     <noscript><button class="rw-btn rw-btn--sm" type="submit">Apply</button></noscript>
   </form>
 
@@ -78,7 +119,7 @@ const active = [
     ) : (
       <>
         <ol class="rw-card rl-list" id="releases" aria-label="Releases">
-          <ReleaseItems releases={items} latest={data.releases[0]?.version} counts={counts} />
+          <ReleaseItems releases={items} latest={data.releases[0]?.version} counts={counts} periodLabel={periodWords} />
         </ol>
         <LoadMore href={nextHref} target="#releases" items="li" status={`Showing ${shown} of ${matches.length}`} label="Load more releases" />
       </>
@@ -93,12 +134,55 @@ const active = [
 </script>
 
 <style>
+  .sorts,
+  .periods {
+    display: flex;
+    gap: 0.35rem;
+    margin: 1.4rem 0 0;
+    padding-bottom: 0.2rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .periods {
+    margin-top: 0.6rem;
+  }
+  .sorts__tab,
+  .periods__tab {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--hair);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--ink-2);
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .periods__tab {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.82rem;
+  }
+  .sorts__tab:hover,
+  .periods__tab:hover {
+    color: var(--ink);
+    border-color: color-mix(in oklab, var(--accent) 40%, var(--hair));
+  }
+  .sorts__tab.is-on,
+  .periods__tab.is-on {
+    border-color: transparent;
+    background: var(--accent);
+    color: var(--on-accent);
+  }
   .filters {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.55rem;
-    margin: 1.5rem 0 0.8rem;
+    margin: 0.9rem 0 0.8rem;
   }
   .filters :global(.rw-search) {
     flex: 1 1 16rem;

@@ -15,6 +15,7 @@ import { deviceFromHeaders } from '../../../lib/device.ts';
 import { community, viewerOf } from '../../../lib/community.ts';
 import { isNoticeCode } from '../../../lib/community-actions.ts';
 import { releaseKey } from '../../../../../lib/site/social.ts';
+import { isCommentOrder } from '../../../../../lib/site/social-store.ts';
 import { formatBytes, formatDate, platformName, shortHash } from '../../../lib/format.ts';
 
 const data = await siteData();
@@ -37,7 +38,9 @@ const mine = release && device
 // Likes, reactions and comments, as the signed-in person (if any) may see them.
 const signInEnabled = community().auth !== null;
 const viewer = await viewerOf(Astro.request);
-const social = release ? community().store.releaseSocial(releaseKey(release), viewer ? { id: viewer.id, moderator: viewer.moderator } : null) : null;
+const orderParam = Astro.url.searchParams.get('comments');
+const commentOrder = isCommentOrder(orderParam) ? orderParam : 'top';
+const social = release ? community().store.releaseSocial(releaseKey(release), viewer ? { id: viewer.id, moderator: viewer.moderator } : null, commentOrder) : null;
 const noticeParam = Astro.url.searchParams.get('notice');
 const notice = isNoticeCode(noticeParam) ? noticeParam : null;
 
@@ -161,7 +164,7 @@ const openVerify = device && platforms.includes(device.platform) ? device.platfo
           )}
         </div>
 
-        {social && <Community page={`/v/${release.product}/${release.version}`} social={social} viewer={viewer} signInEnabled={signInEnabled} notice={notice} />}
+        {social && <Community page={`/v/${release.product}/${release.version}`} social={social} viewer={viewer} signInEnabled={signInEnabled} notice={notice} order={commentOrder} />}
 
         <nav class="pager" aria-label="Other releases">
           {around.newer ? (

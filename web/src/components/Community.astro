@@ -11,7 +11,7 @@ import EmptyState from '@robyrew/ui/components/EmptyState.astro';
 import Icon from '@robyrew/ui/components/Icon.astro';
 import LikeButton from '@robyrew/ui/components/LikeButton.astro';
 import ReactionBar from '@robyrew/ui/components/ReactionBar.astro';
-import type { ReleaseSocial } from '../../../lib/site/social-store.ts';
+import type { CommentOrder, ReleaseSocial } from '../../../lib/site/social-store.ts';
 import { COMMENT_MAX } from '../../../lib/site/social.ts';
 import { GOOD_NOTICES, NOTICES, type NoticeCode } from '../lib/community-actions.ts';
 import { ID_SITE, signInHref, type SiteUser } from '../lib/community.ts';
@@ -24,9 +24,12 @@ interface Props {
   viewer: SiteUser | null;
   signInEnabled: boolean;
   notice: NoticeCode | null;
+  /** How the top-level comments are ordered (?comments=top|new|old). */
+  order?: CommentOrder;
 }
 
-const { page, social, viewer, signInEnabled, notice } = Astro.props;
+const { page, social, viewer, signInEnabled, notice, order = 'top' } = Astro.props;
+const ORDERS: readonly { id: CommentOrder; label: string }[] = [{ id: 'top', label: 'Top' }, { id: 'new', label: 'Newest' }, { id: 'old', label: 'Oldest' }];
 const action = `${page}/act`;
 const signIn = signInHref(`${page}#community`);
 const now = Date.now();
@@ -100,6 +103,15 @@ const commentsLabel = `${social.commentCount} ${social.commentCount === 1 ? 'com
   }
 
   {
+    social.comments.length > 1 && (
+      <nav class="community__order" aria-label="Order comments">
+        {ORDERS.map(item => (
+          <a class:list={['community__order-tab', { 'is-on': order === item.id }]} href={`${page}${item.id === 'top' ? '' : `?comments=${item.id}`}#community`} aria-current={order === item.id ? 'page' : undefined}>{item.label}</a>
+        ))}
+      </nav>
+    )
+  }
+  {
     social.comments.length > 0 ? (
       <ol class="community__list">
         {social.comments.map(comment => <CommentItem comment={comment} viewer={viewer} action={action} now={now} />)}
@@ -170,6 +182,27 @@ const commentsLabel = `${social.commentCount} ${social.commentCount === 1 ? 'com
     margin: 0;
     max-width: 40rem;
     color: var(--ink-2);
+  }
+  .community__order {
+    display: flex;
+    gap: 0.3rem;
+    margin: 1.2rem 0 0;
+  }
+  .community__order-tab {
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    color: var(--ink-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .community__order-tab:hover {
+    background: var(--rw-fill);
+    color: var(--ink);
+  }
+  .community__order-tab.is-on {
+    background: var(--rw-fill-2, var(--rw-fill));
+    color: var(--ink);
   }
   .community__list {
     display: grid;

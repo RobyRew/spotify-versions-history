@@ -198,7 +198,7 @@ export function releaseViews(ledger: Ledger, health: HealthFile | null, report: 
   }).sort((a, b) => compareVersions(b.version, a.version) || b.fullVersion.localeCompare(a.fullVersion));
 }
 
-export const RELEASE_SORTS = ['newest', 'oldest', 'downloads', 'trending', 'liked', 'discussed'] as const;
+export const RELEASE_SORTS = ['newest', 'oldest', 'liked', 'discussed', 'downloads', 'active', 'trending'] as const;
 export type ReleaseSort = (typeof RELEASE_SORTS)[number];
 export const isReleaseSort = (value: unknown): value is ReleaseSort => typeof value === 'string' && (RELEASE_SORTS as readonly string[]).includes(value);
 
@@ -208,6 +208,8 @@ export interface ReleaseCounts {
   recentDownloads: number;
   likes: number;
   comments: number;
+  /** The newest like, reaction or comment (ms), for the "active" sort. */
+  lastActivity?: number | null;
 }
 
 export interface ReleaseQuery {
@@ -219,25 +221,30 @@ export interface ReleaseQuery {
   downloadable?: boolean;
   /** For the metric sorts; a release missing from it counts as zero. */
   counts?: ReadonlyMap<string, ReleaseCounts>;
+  /** Only releases with a comment in `counts`. */
+  commented?: boolean;
 }
 
 const SORT_METRIC: Partial<Record<ReleaseSort, keyof ReleaseCounts>> = {
-  downloads: 'downloads', trending: 'recentDownloads', liked: 'likes', discussed: 'comments',
+  downloads: 'downloads', trending: 'recentDownloads', liked: 'likes', discussed: 'comments', active: 'lastActivity',
 };
 
 export function filterReleases(releases: readonly ReleaseView[], query: ReleaseQuery): ReleaseView[] {
   const q = query.q?.trim().toLowerCase();
+  const count = (release: ReleaseView) => query.counts?.get(`${release.product}/${release.version}`);
   const matches = releases.filter(release =>
     (!q || release.fullVersion.toLowerCase().includes(q))
     && (!query.platform || release.artifacts.some(artifact => artifact.platform === query.platform && (!query.arch || artifact.arch === query.arch)))
     && (query.platform || !query.arch || release.artifacts.some(artifact => artifact.arch === query.arch))
     && (!query.signed || release.signed)
-    && (!query.downloadable || release.downloadable));
+    && (!query.downloadable || release.downloadable)
+    // "With comments": a shown comment in the counted period.
+    && (!query.commented || (count(release)?.comments ?? 0) > 0));
   if (query.sort === 'oldest') return matches.toReversed();
   const metric = query.sort ? SORT_METRIC[query.sort] : undefined;
   if (!metric) return matches;
   // Highest first; ties keep the newest-first order (the sort is stable).
-  const value = (release: ReleaseView) => query.counts?.get(`${release.product}/${release.version}`)?.[metric] ?? 0;
+  const value = (release: ReleaseView) => count(release)?.[metric] ?? 0;
   return matches.toSorted((a, b) => value(b) - value(a));
 }
 

@@ -4,7 +4,8 @@
  * passed and its download, then a link to the platform's full history. The visitor's system is marked.
  */
 import Icon from '@robyrew/ui/components/Icon.astro';
-import type { LatestDownload, Platform } from '../../../lib/site/model.ts';
+import type { LatestDownload, Platform, ReleaseCounts } from '../../../lib/site/model.ts';
+import { releaseKey } from '../../../lib/site/social.ts';
 import { ARCH_LABELS, FORMAT_LABELS, PLATFORM_LABELS } from '../../../lib/site/model.ts';
 import type { Device } from '../lib/device.ts';
 import { formatBytes, formatDate, PLATFORM_ICONS } from '../lib/format.ts';
@@ -17,9 +18,11 @@ interface Props {
   device: Device | null;
   /** How many releases have a file for this platform. */
   releases: number;
+  /** All-time community counts per release key. */
+  counts?: ReadonlyMap<string, ReleaseCounts>;
 }
 
-const { platform, entries, device, releases } = Astro.props;
+const { platform, entries, device, releases, counts } = Astro.props;
 const mine = device?.platform === platform;
 const name = PLATFORM_LABELS[platform];
 ---
@@ -38,6 +41,10 @@ const name = PLATFORM_LABELS[platform];
             <p class="pcard__arch">{ARCH_LABELS[arch]}</p>
             <a class="pcard__version mono" href={`/v/${release.product}/${release.version}`} data-vt-release={`/v/${release.product}/${release.version}`}>{release.version}</a>
             <p class="pcard__meta">{formatDate(artifact.date ?? release.date)} · {FORMAT_LABELS[artifact.format]} · {formatBytes(artifact.size)}</p>
+            <a class="pcard__social" href={`/v/${release.product}/${release.version}#community`} title="Likes and comments">
+              <span class:list={{ 'is-zero': !counts?.get(releaseKey(release))?.likes }}><Icon name="heart" size={13} />{counts?.get(releaseKey(release))?.likes ?? 0}</span>
+              <span class:list={{ 'is-zero': !counts?.get(releaseKey(release))?.comments }}><Icon name="message" size={13} />{counts?.get(releaseKey(release))?.comments ?? 0}</span>
+            </a>
             {newer && (
               <p class="pcard__newer">
                 Newer on the mirror: <a class="mono" href={`/v/${newer.release.product}/${newer.release.version}`}>{newer.release.version}</a>
@@ -143,6 +150,27 @@ const name = PLATFORM_LABELS[platform];
   }
   .pcard__newer a {
     color: var(--ink-2);
+  }
+  .pcard__social {
+    display: inline-flex;
+    gap: 0.7rem;
+    margin-top: 0.3rem;
+    color: var(--ink-2);
+    font-size: 0.82rem;
+    text-decoration: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .pcard__social span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .pcard__social .is-zero {
+    color: var(--ink-3);
+  }
+  .pcard__social:hover,
+  .pcard__social:hover .is-zero {
+    color: var(--accent);
   }
   .pcard__actions {
     display: flex;

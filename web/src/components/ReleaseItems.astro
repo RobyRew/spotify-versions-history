@@ -16,11 +16,13 @@ interface Props {
   releases: readonly ReleaseView[];
   /** The newest release's version, marked "Latest". */
   latest?: string;
-  /** Community counts per release key; likes and comments show when there are any. */
+  /** Community counts per release key; with it, every row shows its likes and comments (zeros dimmed). */
   counts?: ReadonlyMap<string, ReleaseCounts>;
+  /** The counts' window in words ("this week"), for the tooltips; none for all time. */
+  periodLabel?: string;
 }
 
-const { releases, latest, counts } = Astro.props;
+const { releases, latest, counts, periodLabel } = Astro.props;
 ---
 
 {
@@ -40,8 +42,12 @@ const { releases, latest, counts } = Astro.props;
           <span class="rl__meta">
             {release.date ? <time datetime={release.date}>{formatDate(release.date)}</time> : <span>Date unknown</span>}
             {build && <span class="mono rl__build">{build}</span>}
-            {count && count.likes > 0 && <span class="rl__count" title="Likes"><Icon name="heart" size={12} />{count.likes}</span>}
-            {count && count.comments > 0 && <span class="rl__count" title="Comments"><Icon name="message" size={12} />{count.comments}</span>}
+            {counts && (
+              <>
+                <span class:list={['rl__count', { 'rl__count--zero': !count?.likes }]} title={periodLabel ? `Likes ${periodLabel}` : 'Likes'}><Icon name="heart" size={12} />{count?.likes ?? 0}</span>
+                <span class:list={['rl__count', { 'rl__count--zero': !count?.comments }]} title={periodLabel ? `Comments ${periodLabel}` : 'Comments'}><Icon name="message" size={12} />{count?.comments ?? 0}</span>
+              </>
+            )}
           </span>
         </div>
         <span class="rl__platforms">

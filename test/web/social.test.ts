@@ -301,3 +301,59 @@ describe('metric sorts', () => {
     expect(order('newest')).toEqual(['1.3', '1.2', '1.1']);
   });
 });
+
+describe('periods, activity and comment order', () => {
+  it('counts likes, comments and downloads in the period and keeps the last activity', () => {
+    const { social, user, tick } = store(Date.UTC(2026, 10, 26, 12));
+    user('alice');
+    user('bob');
+    social.setLike('desktop/1', 'alice', true);
+    social.addComment('desktop/1', 'alice', 'old note', null);
+    social.recordDownload({ artifact: 'a', release: 'desktop/1', visitor: 'v1', subnet: 'n1' });
+    tick(10 * 86_400_000);
+    social.setLike('desktop/1', 'bob', true);
+    social.setReaction('desktop/2', 'bob', '🎉', true);
+    const all = social.metrics('all').get('desktop/1')!;
+    const week = social.metrics('week').get('desktop/1')!;
+    expect([all.likes, all.comments, all.downloads]).toEqual([2, 1, 1]);
+    expect([week.likes, week.comments, week.downloads]).toEqual([1, 0, 0]);
+    expect(week.lastActivity).toBe(Date.UTC(2026, 11, 6, 12));
+    expect(social.metrics('day').get('desktop/2')).toMatchObject({ likes: 0, lastActivity: Date.UTC(2026, 11, 6, 12) });
+  });
+
+  it('lists the newest shown comments and orders a release by top, new or old', () => {
+    const { social, user, tick } = store();
+    for (const id of ['alice', 'bob', 'carol']) user(id);
+    const first = social.addComment('desktop/1', 'alice', 'first', null);
+    tick(1000);
+    const second = social.addComment('desktop/1', 'bob', 'second', null);
+    tick(1000);
+    social.addComment('desktop/2', 'carol', 'elsewhere', null);
+    const firstId = first.ok ? first.value : 0;
+    social.setCommentReaction(firstId, 'bob', '👍', true);
+    social.setCommentReaction(firstId, 'carol', '❤️', true);
+    expect(social.recentComments(2).map(comment => comment.body)).toEqual(['elsewhere', 'second']);
+    expect(social.releaseSocial('desktop/1', null, 'old').comments.map(comment => comment.body)).toEqual(['first', 'second']);
+    expect(social.releaseSocial('desktop/1', null, 'new').comments.map(comment => comment.body)).toEqual(['second', 'first']);
+    expect(social.releaseSocial('desktop/1', null, 'top').comments.map(comment => comment.body)).toEqual(['first', 'second']);
+    tick(1000);
+    social.addComment('desktop/1', 'carol', 'reply one', second.ok ? second.value : 0);
+    tick(1000);
+    social.addComment('desktop/1', 'alice', 'reply two', second.ok ? second.value : 0);
+    expect(social.releaseSocial('desktop/1', null, 'top').comments.map(comment => comment.body)).toEqual(['second', 'first']);
+  });
+});
+
+describe('activity sort and the comments filter', () => {
+  const release = (version: string): ReleaseView => ({ product: 'desktop', version, fullVersion: `${version}.g0`, date: null, artifacts: [], platforms: [], signed: false, downloadable: false });
+  const releases = ['1.3', '1.2', '1.1'].map(release);
+  const counts = new Map<string, ReleaseCounts>([
+    ['desktop/1.1', { downloads: 0, recentDownloads: 0, likes: 0, comments: 2, lastActivity: 500 }],
+    ['desktop/1.2', { downloads: 0, recentDownloads: 0, likes: 3, comments: 0, lastActivity: 900 }],
+  ]);
+  it('orders by the newest activity and keeps only commented releases when asked', () => {
+    expect(filterReleases(releases, { sort: 'active', counts }).map(item => item.version)).toEqual(['1.2', '1.1', '1.3']);
+    expect(filterReleases(releases, { commented: true, counts }).map(item => item.version)).toEqual(['1.1']);
+    expect(filterReleases(releases, { commented: true, sort: 'liked', counts }).map(item => item.version)).toEqual(['1.1']);
+  });
+});

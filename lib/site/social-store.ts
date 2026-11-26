@@ -183,11 +183,35 @@ export interface Viewer {
 }
 
 export interface ReleaseMetrics {
+  /** Downloads in the period (all time when none). */
   downloads: number;
   /** Downloads in the last seven days, today included. */
   recentDownloads: number;
+  /** Likes given in the period. */
   likes: number;
+  /** Shown comments posted in the period. */
   comments: number;
+  /** The newest like, reaction or shown comment, any time; null when there is none. */
+  lastActivity: number | null;
+}
+
+/** The windows the metric sorts can count over. */
+export const PERIODS = ['day', 'week', 'month', 'all'] as const;
+export type Period = (typeof PERIODS)[number];
+export const isPeriod = (value: unknown): value is Period => typeof value === 'string' && (PERIODS as readonly string[]).includes(value);
+const PERIOD_DAYS: Record<Period, number | null> = { day: 1, week: 7, month: 30, all: null };
+
+/** How a release's top-level comments are ordered; replies always read oldest first. */
+export const COMMENT_ORDERS = ['top', 'new', 'old'] as const;
+export type CommentOrder = (typeof COMMENT_ORDERS)[number];
+export const isCommentOrder = (value: unknown): value is CommentOrder => typeof value === 'string' && (COMMENT_ORDERS as readonly string[]).includes(value);
+
+export interface RecentComment {
+  id: number;
+  release: string;
+  author: CommentAuthor;
+  body: string;
+  createdAt: number;
 }
 
 export type SocialError = 'not_found' | 'forbidden' | 'too_late' | 'bad_parent' | 'own_comment';
@@ -324,7 +348,7 @@ export function createSocialStore(db: DatabaseSync, clock: () => number = Date.n
       db.prepare('UPDATE users SET handle = NULL, name = NULL, avatar = NULL, roles = \'[]\', deleted = 1, updated_at = ? WHERE id = ?').run(clock(), id);
     },
 
-    releaseSocial(release: string, viewer: Viewer | null): ReleaseSocial {
+    releaseSocial(release: string, viewer: Viewer | null, order: CommentOrder = 'old'): ReleaseSocial {
       const viewerId = viewer?.id ?? '';
       const likes = Number((likeCount.get(release) as { count: number }).count);
       const liked = viewer ? Boolean(db.prepare('SELECT 1 FROM likes WHERE release = ? AND user_id = ?').get(release, viewerId)) : false;
@@ -347,6 +371,10 @@ export function createSocialStore(db: DatabaseSync, clock: () => number = Date.n
       }
       for (const view of top) view.replies = view.replies.filter(reply => !reply.deleted);
       const comments = top.filter(view => !view.deleted || view.replies.length > 0);
+      // Top: reactions plus two per reply, the newer first among equals; New: newest first.
+      const score = (view: CommentView) => view.reactions.reduce((sum, reaction) => sum + reaction.count, 0) + 2 * view.replies.length;
+      if (order === 'new') comments.reverse();
+      else if (order === 'top') comments.sort((a, b) => score(b) - score(a) || b.createdAt - a.createdAt);
       const commentCount = rows.filter(row => row.deleted_at === null && row.hidden === 0).length;
       return { likes, liked, reactions, comments, commentCount };
     },
@@ -499,21 +527,57 @@ export function createSocialStore(db: DatabaseSync, clock: () => number = Date.n
       });
     },
 
-    /** Per release: downloads (all time and the last seven days), likes, and shown comments. */
-    metrics(): Map<string, ReleaseMetrics> {
-      const since = utcDay(clock() - 6 * 86_400_000);
+    /**
+     * Per release: downloads, likes and shown comments in the period (day = today, week and month =
+     * the last 7 and 30 days counted from now, all = every one), downloads in the last seven days,
+     * and the time of the newest like, reaction or shown comment.
+     */
+    metrics(period: Period = 'all'): Map<string, ReleaseMetrics> {
+      const now = clock();
+      const days = PERIOD_DAYS[period];
+      const sinceDay = days === null ? '0000-00-00' : utcDay(now - (days - 1) * 86_400_000);
+      const sinceMs = days === null ? 0 : period === 'day' ? Date.parse(`${utcDay(now)}T00:00:00Z`) : now - days * 86_400_000;
+      const weekDay = utcDay(now - 6 * 86_400_000);
       const out = new Map<string, ReleaseMetrics>();
       const entry = (release: string) => {
         let value = out.get(release);
-        if (!value) out.set(release, (value = { downloads: 0, recentDownloads: 0, likes: 0, comments: 0 }));
+        if (!value) out.set(release, (value = { downloads: 0, recentDownloads: 0, likes: 0, comments: 0, lastActivity: null }));
         return value;
       };
-      for (const row of db.prepare('SELECT release, SUM(count) AS total, SUM(CASE WHEN day >= ? THEN count ELSE 0 END) AS recent FROM downloads GROUP BY release').all(since) as { release: string; total: number; recent: number }[]) {
+      const later = (current: number | null, time: number) => (current === null || time > current ? time : current);
+      for (const row of db.prepare('SELECT release, SUM(CASE WHEN day >= ? THEN count ELSE 0 END) AS total, SUM(CASE WHEN day >= ? THEN count ELSE 0 END) AS recent FROM downloads GROUP BY release').all(sinceDay, weekDay) as { release: string; total: number; recent: number }[]) {
         Object.assign(entry(row.release), { downloads: Number(row.total), recentDownloads: Number(row.recent) });
       }
-      for (const row of db.prepare('SELECT release, COUNT(*) AS count FROM likes GROUP BY release').all() as { release: string; count: number }[]) entry(row.release).likes = Number(row.count);
-      for (const row of db.prepare('SELECT release, COUNT(*) AS count FROM comments WHERE deleted_at IS NULL AND hidden = 0 GROUP BY release').all() as { release: string; count: number }[]) entry(row.release).comments = Number(row.count);
+      for (const row of db.prepare('SELECT release, SUM(created_at >= ?) AS count, MAX(created_at) AS last FROM likes GROUP BY release').all(sinceMs) as { release: string; count: number; last: number }[]) {
+        const value = entry(row.release);
+        value.likes = Number(row.count);
+        value.lastActivity = later(value.lastActivity, Number(row.last));
+      }
+      for (const row of db.prepare('SELECT release, MAX(created_at) AS last FROM reactions GROUP BY release').all() as { release: string; last: number }[]) {
+        const value = entry(row.release);
+        value.lastActivity = later(value.lastActivity, Number(row.last));
+      }
+      for (const row of db.prepare('SELECT release, SUM(created_at >= ?) AS count, MAX(created_at) AS last FROM comments WHERE deleted_at IS NULL AND hidden = 0 GROUP BY release').all(sinceMs) as { release: string; count: number; last: number }[]) {
+        const value = entry(row.release);
+        value.comments = Number(row.count);
+        value.lastActivity = later(value.lastActivity, Number(row.last));
+      }
       return out;
+    },
+
+    /** The newest shown comments across every release (not deleted, not hidden), newest first. */
+    recentComments(limit = 6): RecentComment[] {
+      const rows = db.prepare(`
+        SELECT c.id, c.release, c.parent_id, c.user_id, c.body, c.created_at, c.edited_at, c.deleted_at, c.hidden, 0 AS reports,
+               u.handle, u.name, u.avatar, u.roles, u.deleted AS user_deleted
+          FROM comments c JOIN users u ON u.id = c.user_id
+         WHERE c.deleted_at IS NULL AND c.hidden = 0
+         ORDER BY c.created_at DESC, c.id DESC
+         LIMIT ?`).all(Math.max(1, Math.min(50, limit))) as unknown as CommentRow[];
+      return rows.map(row => {
+        const view = viewOf(row, null);
+        return { id: view.id, release: view.release, author: view.author, body: view.body, createdAt: view.createdAt };
+      });
     },
   };
 }

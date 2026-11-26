@@ -17,7 +17,7 @@ import { createLogtoAuth, type LogtoAuth, type LogtoClaims } from '@robyrew/astr
 import { displayHandle, handleFromClaims } from '@robyrew/astro-logto/handle';
 import { sqliteSessionStore, type SqliteLike } from '@robyrew/astro-logto/sqlite';
 import { createLogtoWebhookHandler } from '@robyrew/astro-logto/webhook';
-import { createSocialStore, openSocialDb, snapshotDb, type SocialStore, type StoredUser } from '../../../lib/site/social-store.ts';
+import { createSocialStore, openSocialDb, snapshotDb, type Period, type SocialStore, type StoredUser } from '../../../lib/site/social-store.ts';
 import { safeAvatar, tokenBuckets } from '../../../lib/site/social.ts';
 
 export interface SiteUser {
@@ -118,7 +118,7 @@ function build() {
     reactLimit: tokenBuckets(60, 60),
     /** Comment writes per address, on top of the per-person rules in social.ts. */
     writeLimit: tokenBuckets(20, 10),
-    counts: { at: 0, value: new Map() as ReturnType<SocialStore['metrics']> },
+    counts: new Map<Period, { at: number; value: ReturnType<SocialStore['metrics']> }>(),
   };
 }
 
@@ -137,11 +137,14 @@ export async function viewerOf(request: Request): Promise<SiteUser | null> {
   return auth ? auth.getUser(request) : null;
 }
 
-/** Per-release downloads, likes and comments for the sort orders, at most a minute old. */
-export function releaseCounts(): ReturnType<SocialStore['metrics']> {
+/** Per-release downloads, likes and comments in the period, for the sorts and the counts; at most a minute old. */
+export function releaseCounts(period: Period = 'all'): ReturnType<SocialStore['metrics']> {
   const shared = community();
-  if (Date.now() - shared.counts.at > 60_000) shared.counts = { at: Date.now(), value: shared.store.metrics() };
-  return shared.counts.value;
+  const cached = shared.counts.get(period);
+  if (cached && Date.now() - cached.at <= 60_000) return cached.value;
+  const value = shared.store.metrics(period);
+  shared.counts.set(period, { at: Date.now(), value });
+  return value;
 }
 
 export const signInHref = (returnTo: string): string => `/api/auth/sign-in?returnTo=${encodeURIComponent(returnTo)}`;
