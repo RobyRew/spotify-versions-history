@@ -7,7 +7,8 @@
  * Builds the record already holds are skipped without a download. The others are fetched again
  * through the verify pipeline (so the Store's signed links and the retries apply), each file's
  * SHA-256 must equal the merged report's, and the object is written only when the bucket does not
- * have it. The record is rewritten only when it changes. Needs CLOUDFLARE_ACCOUNT_ID,
+ * have it. The bucket never grows past ARCHIVE_MAX_BYTES (default 9 GB, under R2's free 10 GB): builds
+ * that would pass it are skipped and named. The record is rewritten only when it changes. Needs CLOUDFLARE_ACCOUNT_ID,
  * R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY (not with --dry-run); the base comes from --base,
  * ARCHIVE_FILES_URL or the record.
  */
@@ -18,7 +19,7 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { loadTrust } from '../lib/trust.ts';
 import { artifactId } from '../lib/ledger/schema.ts';
-import { archiveFilename, emptyRecord, filesToArchive, recordEntry, type ArchiveRecord } from './storage/archive.ts';
+import { archiveFilename, emptyRecord, filesToArchive, FREE_TIER_CAP_BYTES, recordEntry, storedBytes, withinCap, type ArchiveRecord } from './storage/archive.ts';
 import { r2Client, r2ConfigFromEnv } from './storage/r2.ts';
 import type { Detection } from './types.ts';
 import { runPipeline } from './verify/pipeline.ts';
@@ -51,9 +52,13 @@ const base = values.base ?? process.env.ARCHIVE_FILES_URL ?? record.base;
 if (!base) throw new Error('No files Worker origin: pass --base or set ARCHIVE_FILES_URL');
 record.base = base.replace(/\/+$/, '');
 
-const wanted = filesToArchive(merged, record);
-console.log(`${merged.artifacts.length} checked build(s); ${wanted.length} without a copy yet`);
+// Never past R2's free tier: what does not fit under the cap is skipped and named, and the run stays green.
+const capBytes = Number(process.env.ARCHIVE_MAX_BYTES) > 0 ? Number(process.env.ARCHIVE_MAX_BYTES) : FREE_TIER_CAP_BYTES;
+const { fit: wanted, over } = withinCap(filesToArchive(merged, record), record, capBytes);
+const gb = (bytes: number) => (bytes / 1e9).toFixed(2);
+console.log(`${merged.artifacts.length} checked build(s); ${wanted.length + over.length} without a copy yet; stored ${gb(storedBytes(record))} GB of the ${gb(capBytes)} GB cap`);
 for (const artifact of wanted) console.log(`  ${artifact.key} → ${archiveFilename(artifact)} (${artifact.size} bytes)`);
+for (const artifact of over) console.warn(`  ${artifact.key}: skipped, it would pass the ${gb(capBytes)} GB cap`);
 
 if (wanted.length > 0 && !dryRun) {
   const config = r2ConfigFromEnv();
