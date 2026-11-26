@@ -1,0 +1,11 @@
+# The archive's files Worker: serves the copies in R2 (bucket spotify-versions-archive) at
+# https://spotify-versions-files.<account subdomain>.workers.dev/sha256/<hash>/<filename>.
+# Deployed by .github/workflows/worker.yml with the CLOUDFLARE_API_TOKEN secret.
+name = "spotify-versions-files"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "spotify-versions-archive"

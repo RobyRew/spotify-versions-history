@@ -22,7 +22,8 @@ import type { Ledger, MobileState } from '../../../lib/ledger/schema.ts';
 import type { LegacyCatalog, LegacyOfficial } from '../../../lib/v1/catalog.ts';
 import { HealthFile } from '../../../sensors/health/schema.ts';
 import type { MergedReport } from '../../../sensors/verify/report.ts';
-import { releaseViews, type ReleaseView } from '../../../lib/site/model.ts';
+import { releaseViews, withArchive, type ReleaseView } from '../../../lib/site/model.ts';
+import type { ArchiveRecord } from '../../../sensors/storage/archive.ts';
 import type { MobileHistory } from '../../../sensors/mobile.ts';
 
 const REFRESH_MS = 10 * 60_000;
@@ -59,6 +60,8 @@ export interface SiteData {
   mobileHistory: MobileHistory | null;
   health: HealthFile | null;
   verification: MergedReport | null;
+  /** The record of the archive's own copies, or null. */
+  archive: ArchiveRecord | null;
   /** The probe workflows' newest finished runs, by file name; empty when GitHub cannot be asked. */
   runs: Record<string, WorkflowRun>;
   loadedAt: string;
@@ -89,17 +92,17 @@ async function loadRuns(): Promise<Record<string, WorkflowRun>> {
   return runs;
 }
 
-/** mobile-history.json from LEGACY_DATA_URL, else from LEGACY_DATA_DIR; null when neither has it. */
-async function loadMobileHistory(): Promise<MobileHistory | null> {
+/** An optional data file from LEGACY_DATA_URL, else from LEGACY_DATA_DIR; null when neither has it. */
+async function loadDataFile<T>(name: string): Promise<T | null> {
   if (process.env.LEGACY_DATA_URL) {
     try {
-      return (await readJsonUrl(new URL('mobile-history.json', process.env.LEGACY_DATA_URL.replace(/\/?$/, '/')).href)) as MobileHistory;
+      return (await readJsonUrl(new URL(name, process.env.LEGACY_DATA_URL.replace(/\/?$/, '/')).href)) as T;
     } catch {
       // Fall through to the bundled copy.
     }
   }
   try {
-    return (await readJsonFile(resolve(process.env.LEGACY_DATA_DIR ?? '../site/data', 'mobile-history.json'))) as MobileHistory;
+    return (await readJsonFile(resolve(process.env.LEGACY_DATA_DIR ?? '../site/data', name))) as T;
   } catch {
     return null;
   }
@@ -160,18 +163,22 @@ async function optional<T>(url: string | undefined, file: string, parse: (value:
 
 async function load(fallback: boolean): Promise<SiteData> {
   const now = new Date();
-  const [{ ledger, from }, health, verification, mobileHistory, runs] = await Promise.all([
+  const [{ ledger, from }, health, verification, mobileHistory, runs, loadedArchive] = await Promise.all([
     loadLedger(fallback),
     optional(process.env.HEALTH_URL, process.env.HEALTH_FILE ?? '.data/health.json', value => HealthFile.parse(value)),
     optional(process.env.VERIFICATION_URL, process.env.VERIFICATION_FILE ?? '.data/verification.json', value => Report.parse(value) as unknown as MergedReport),
-    loadMobileHistory(),
+    loadDataFile<MobileHistory>('mobile-history.json'),
     loadRuns(),
+    loadDataFile<ArchiveRecord>('archive.json'),
   ]);
   // A refresh that cannot read an optional input keeps the copy it already has.
   const keptHealth = health.value ?? cache?.data.health ?? null;
   const keptVerification = verification.value ?? cache?.data.verification ?? null;
+  // The archive's own copies in R2 (sensors/archive.ts); ARCHIVE_FILES_URL overrides the record's origin.
+  const archive = loadedArchive ?? cache?.data.archive ?? null;
   return {
-    releases: releaseViews(ledger, keptHealth, keptVerification, now),
+    releases: withArchive(releaseViews(ledger, keptHealth, keptVerification, now), archive, keptHealth, keptVerification, process.env.ARCHIVE_FILES_URL),
+    archive,
     ledger,
     mobile: ledger.sensors.mobile,
     mobileHistory: mobileHistory ?? cache?.data.mobileHistory ?? null,

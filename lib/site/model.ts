@@ -15,6 +15,7 @@ import { classify, tokenExpiry } from '../../sensors/health/check.ts';
 import type { HealthEntry, HealthFile, Provider } from '../../sensors/health/schema.ts';
 import type { MergedArtifact, MergedReport } from '../../sensors/verify/report.ts';
 import type { VerificationLevel } from '../../sensors/verify/types.ts';
+import { copyUrl, type ArchiveRecord } from '../../sensors/storage/archive.ts';
 
 export type Platform = Artifact['platform'];
 export type Arch = Artifact['arch'];
@@ -196,6 +197,57 @@ export function releaseViews(ledger: Ledger, health: HealthFile | null, report: 
       downloadable: artifacts.some(artifact => artifact.best !== null),
     };
   }).sort((a, b) => compareVersions(b.version, a.version) || b.fullVersion.localeCompare(a.fullVersion));
+}
+
+/**
+ * Adds the archive's own copies (site/data/archive.json) to the releases: a copy of a file the ledger
+ * lists becomes one more link of that file (ranked after Spotify's and the stores', before the
+ * mirror); a copy of a file it does not list (a macOS disk image, a Store package, a snap) becomes a
+ * new file of its release, with the copy as its only link. A copy whose release is not in the ledger
+ * is left out. `base` overrides the record's files origin.
+ */
+export function withArchive(releases: readonly ReleaseView[], record: ArchiveRecord | null, health: HealthFile | null, report: MergedReport | null, base?: string | null): ReleaseView[] {
+  const origin = base || record?.base;
+  if (!record || !origin) return [...releases];
+  const byFull = new Map(releases.map(release => [release.fullVersion, release]));
+  const byVersion = new Map<string, ReleaseView>();
+  for (const release of releases) if (!byVersion.has(release.version)) byVersion.set(release.version, release);
+  const changed = new Map<ReleaseView, ArtifactView[]>();
+  for (const file of Object.values(record.files)) {
+    const release = (file.fullVersion ? byFull.get(file.fullVersion) : undefined) ?? byVersion.get(file.version);
+    if (!release) continue;
+    const artifacts = changed.get(release) ?? release.artifacts.map(artifact => ({ ...artifact, sources: [...artifact.sources] }));
+    changed.set(release, artifacts);
+    const url = copyUrl(origin, file);
+    const known = healthState(health?.sources[url]);
+    const source: SourceView = { url, label: 'Archive copy', kind: 'archive', provider: classify(url), ...known, detail: known.state === 'unknown' ? `kept by the archive ${file.archivedAt.slice(0, 10)}` : known.detail };
+    const existing = artifacts.find(artifact => artifact.id === file.key);
+    if (existing) {
+      if (!existing.sources.some(candidate => candidate.url === url)) existing.sources.push(source);
+      existing.sources.sort((a, b) => Number(b.usable) - Number(a.usable) || PREFERENCE.indexOf(a.provider) - PREFERENCE.indexOf(b.provider) || STATE_ORDER.indexOf(a.state) - STATE_ORDER.indexOf(b.state));
+      existing.best = existing.sources.find(candidate => candidate.usable) ?? null;
+      existing.sha256 ??= file.sha256;
+      existing.size ??= file.size;
+    } else {
+      const merged = report?.artifacts.find(candidate => candidate.key === file.key);
+      artifacts.push({
+        id: file.key, platform: file.platform as Platform, arch: file.arch as Arch, format: file.format as Format,
+        size: file.size, date: release.date, sha256: file.sha256, sha1: null,
+        sources: [source], best: source.usable ? source : null,
+        verification: merged && report ? verificationFor({ id: file.key } as Artifact, file.sha256, report) : null,
+      });
+    }
+  }
+  return releases.map(release => {
+    const artifacts = changed.get(release);
+    if (!artifacts) return release;
+    return {
+      ...release, artifacts,
+      platforms: [...new Set(artifacts.map(artifact => artifact.platform))],
+      signed: artifacts.some(artifact => artifact.verification?.ok === true && artifact.verification.level === 'signed'),
+      downloadable: artifacts.some(artifact => artifact.best !== null),
+    };
+  });
 }
 
 export const RELEASE_SORTS = ['newest', 'oldest', 'liked', 'discussed', 'downloads', 'active', 'trending'] as const;

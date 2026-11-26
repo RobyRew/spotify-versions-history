@@ -137,10 +137,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
+      # Commits site/data/archive.json when a checked build gets its copy in R2.
+      contents: write
       issues: write
       # Asks the Pages build to republish the report the website reads.
       actions: write
+    env:
+      # Secrets cannot be tested in a step's `if`; a job-level flag can.
+      HAS_R2: ${{ secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' && vars.ARCHIVE_FILES_URL != '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -169,6 +173,32 @@ jobs:
           path: merged.json
           if-no-files-found: ignore
           retention-days: 90
+      - uses: actions/download-artifact@v8
+        if: always() && env.HAS_R2 == 'true' && github.ref == 'refs/heads/main'
+        with:
+          name: detections
+      # Copies of the builds that passed at the signed level on every host and have none yet
+      # (sensors/archive.ts); each is fetched again and must have the checked SHA-256.
+      - name: Keep a copy of the checked builds in R2
+        id: archive
+        if: always() && env.HAS_R2 == 'true' && hashFiles('merged.json') != '' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          ARCHIVE_FILES_URL: ${{ vars.ARCHIVE_FILES_URL }}
+        run: node sensors/archive.ts --merged merged.json --detections detections.json --record site/data/archive.json
+      - name: Commit the archive record
+        if: always() && steps.archive.outcome != 'skipped' && github.ref == 'refs/heads/main'
+        run: |
+          git add site/data/archive.json 2>/dev/null || exit 0
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Record copies of checked builds kept in R2'
+          git pull --rebase origin main
+          git push origin HEAD:main
       - name: Republish the website's status files on Pages
         if: always() && hashFiles('merged.json') != '' && github.ref == 'refs/heads/main'
         continue-on-error: true

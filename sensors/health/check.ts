@@ -39,6 +39,9 @@ export function classify(url: string): Provider {
   if (hostname === 'api.snapcraft.io' && pathname.startsWith('/api/v1/snaps/download/')) return 'snap';
   if (hostname === 'loadspot.amd64fox1.workers.dev') return 'loadspot';
   if (hostname === 'github.com' && pathname.includes('/releases/download/')) return 'github-archive';
+  // The archive's own copies in R2, served by its files Worker (worker/): provider "github-archive"
+  // is the archive-copy rank, whichever host serves it.
+  if (/^spotify-versions-files\.[a-z0-9-]+\.workers\.dev$/.test(hostname) && pathname.startsWith('/sha256/')) return 'github-archive';
   return 'other';
 }
 

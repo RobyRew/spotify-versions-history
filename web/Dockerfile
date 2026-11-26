@@ -56,7 +56,7 @@ RUN addgroup -S -g 101 app && adduser -S -u 100 -G app app
 COPY --from=build --chown=app:app /app/web/dist ./dist
 COPY --from=build --chown=app:app /app/web/node_modules ./node_modules
 COPY --from=build --chown=app:app /app/web/package.json ./package.json
-COPY --chown=app:app site/data/catalog.json site/data/official.json site/data/mobile.json site/data/mobile-history.json /app/site/data/
+COPY --chown=app:app site/data/catalog.json site/data/official.json site/data/mobile.json site/data/mobile-history.json site/data/archive.json /app/site/data/
 
 # archive.db (people who signed in, likes, reactions, comments, reports, download counts, sessions)
 # and snapshot/archive.db live here. Mount the named volume spotify-versions-history-data on this

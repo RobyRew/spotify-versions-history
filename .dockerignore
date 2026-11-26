@@ -1,5 +1,5 @@
 # The website image (web/Dockerfile) needs package*.json, tsconfig.json, lib/, sensors/, web/ and
-# four files of site/data. Everything else stays out of the build context.
+# five files of site/data. Everything else stays out of the build context.
 **/node_modules
 **/.astro
 **/dist
@@ -27,6 +27,7 @@ site/data/*
 !site/data/official.json
 !site/data/mobile.json
 !site/data/mobile-history.json
+!site/data/archive.json
 **/* 2
 **/* 2.*
 *.md

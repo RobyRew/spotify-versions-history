@@ -78,6 +78,27 @@ CI's `image` job builds it after the tests and pushes `ghcr.io/robyrew/spotify-v
   verify runs (both workflows ask Pages to republish when they finish);
 - the `LOGTO_*` variables above once the site's Logto app exists.
 
+## Stored copies (R2)
+
+The archive keeps its own copy of every build the daily verify run passes at the signed level on
+every host, in the Cloudflare R2 bucket `spotify-versions-archive`, under
+`sha256/<hash>/spotify-<build>-<platform>-<arch>.<format>` (never overwritten):
+
+- `sensors/archive.ts` runs in verify.yml's report job: builds the record lacks are fetched again
+  through the verify pipeline, must have the checked SHA-256, and are written with a signed PUT
+  (`sensors/storage/r2.ts`, SigV4; R2 checks the SHA-256 too). `site/data/archive.json` records each
+  copy and is committed by the job.
+- `worker/` (deployed by worker.yml as `spotify-versions-files` on workers.dev) serves them: GET and
+  HEAD, byte ranges, a year of caching, nothing outside `/sha256/`.
+- The site adds each copy as an "Archive copy" link (after Spotify's and the stores', before the
+  mirror), and a copy of a file the ledger does not list (macOS disk image, Store package, snap)
+  as a new file of its release.
+
+Needs the secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` (Edit Cloudflare Workers),
+`R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` (R2 Object Read & Write on the bucket), and the
+repository variable `ARCHIVE_FILES_URL` (the Worker's origin). Without them nothing is stored and the
+site shows the other links.
+
 ## Routes
 
 | Route | |
