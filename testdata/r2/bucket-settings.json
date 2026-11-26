@@ -1,0 +1,36 @@
+{
+  "_source": "GET /accounts/{account}/r2/buckets/spotify-versions-archive[/domains/managed|/domains/custom|/lifecycle|/sippy] on 2026-11-26, the result of each response; bucketId and the r2.dev host replaced with zeros",
+  "bucket": {
+    "name": "spotify-versions-archive",
+    "creation_date": "2026-11-26T21:45:19.028Z",
+    "location": "WEUR",
+    "storage_class": "Standard",
+    "jurisdiction": "default"
+  },
+  "managed": {
+    "enabled": false,
+    "bucketId": "00000000000000000000000000000000",
+    "domain": "pub-00000000000000000000000000000000.r2.dev"
+  },
+  "custom": {
+    "domains": []
+  },
+  "lifecycle": {
+    "rules": [
+      {
+        "id": "Default Multipart Abort Rule",
+        "enabled": true,
+        "conditions": {},
+        "abortMultipartUploadsTransition": {
+          "condition": {
+            "type": "Age",
+            "maxAge": 604800
+          }
+        }
+      }
+    ]
+  },
+  "sippy": {
+    "enabled": false
+  }
+}

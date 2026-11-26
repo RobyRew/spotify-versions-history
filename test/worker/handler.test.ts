@@ -51,6 +51,36 @@ describe('files Worker', () => {
     expect(files.gets).toHaveLength(0);
   });
 
+  it('makes at most two bucket reads per request, whatever the request', async () => {
+    // Workers Free answers at most 100,000 requests a day across the account's Workers, so the
+    // Worker reads R2 at most 100,000 × 2 × 31 = 6.2 million times a month: under the free 10 million
+    // Class B operations (web/README.md, "Free-tier limits").
+    const READS_PER_REQUEST = 2;
+    const shapes: [string, RequestInit][] = [
+      [`/${KEY}`, {}],
+      [`/${KEY}`, { method: 'HEAD' }],
+      [`/${KEY}`, { headers: { 'if-none-match': '"e1"' } }],
+      [`/${KEY}`, { headers: { range: 'bytes=2-4' } }],
+      [`/${KEY}`, { headers: { range: 'bytes=20-' } }],
+      [`/${KEY}`, { headers: { range: 'bytes=0-1,4-5' } }],
+      [`/${KEY}`, { method: 'HEAD', headers: { range: 'bytes=-3' } }],
+      [`/sha256/${'b'.repeat(64)}/missing.exe`, {}],
+      ['/', {}], ['/robots.txt', {}], ['/sha256/abc/file.exe', {}],
+      [`/${KEY}`, { method: 'PUT', body: 'x' }], [`/${KEY}`, { method: 'DELETE' }],
+    ];
+    for (const [path, init] of shapes) {
+      const inner = bucket();
+      let reads = 0;
+      const counting: R2BucketLike = {
+        head: key => { reads += 1; return inner.head(key); },
+        get: (key, options) => { reads += 1; return inner.get(key, options); },
+      };
+      await (await handle(request(path, init), counting)).arrayBuffer();
+      expect(reads, `${init.method ?? 'GET'} ${path}`).toBeLessThanOrEqual(READS_PER_REQUEST);
+    }
+    expect(100_000 * READS_PER_REQUEST * 31).toBeLessThan(10_000_000);
+  });
+
   it('reads single ranges and serves the whole file for several', () => {
     expect(parseRange('bytes=0-', 10)).toEqual({ offset: 0, length: 10 });
     expect(parseRange('bytes=-3', 10)).toEqual({ offset: 7, length: 3 });

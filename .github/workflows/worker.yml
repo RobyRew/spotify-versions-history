@@ -2,10 +2,17 @@ name: Files Worker
 # Deploys worker/ (spotify-versions-files on workers.dev), which serves the archive's copies from the
 # R2 bucket spotify-versions-archive. Needs the CLOUDFLARE_API_TOKEN ("Edit Cloudflare Workers") and
 # CLOUDFLARE_ACCOUNT_ID secrets; without them the run says so and deploys nothing.
+# The bucket job reads the bucket's settings every day with the same secrets (sensors/bucket.ts) and
+# fails when one could make R2 bill outside the archive's limits: a public r2.dev URL or a custom
+# domain (reads that skip the Worker's daily cap), a default storage class other than Standard, a
+# lifecycle rule moving objects to Infrequent Access, Sippy, or a setting it cannot read. The token
+# needs Workers R2 Storage: Read for it. Scheduled runs only check; they do not deploy.
 on:
   push:
     branches: [main]
     paths: ['worker/**', '.github/workflows/worker.yml']
+  schedule:
+    - cron: '47 3 * * *'
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,8 +20,24 @@ concurrency:
   group: files-worker
   cancel-in-progress: false
 jobs:
-  deploy:
+  bucket:
     if: github.repository == 'RobyRew/spotify-versions-history'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+      # Built-in modules only, so no npm install.
+      - name: Check the bucket for a public URL, a custom domain or another storage class
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node sensors/bucket.ts
+
+  deploy:
+    if: github.repository == 'RobyRew/spotify-versions-history' && github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
