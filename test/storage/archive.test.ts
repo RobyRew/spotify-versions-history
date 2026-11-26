@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { withArchive, type ArtifactView, type ReleaseView } from '../../lib/site/model.ts';
-import { classify } from '../../sensors/health/check.ts';
+import { classify, collectSources } from '../../sensors/health/check.ts';
 import { archiveFilename, copyUrl, emptyRecord, filesToArchive, objectKey, recordEntry, type ArchiveRecord } from '../../sensors/storage/archive.ts';
 import type { MergedArtifact, MergedReport } from '../../sensors/verify/report.ts';
 
@@ -65,6 +65,13 @@ describe('copies on the site', () => {
     expect(dmg.best?.url).toBe(`https://spotify-versions-files.x.workers.dev/sha256/${SHA('b')}/spotify-1.3.10.2586-macos-arm64.dmg`);
     expect(view!.platforms).toEqual(['windows', 'macos']);
     expect(release.artifacts[0]!.sources).toHaveLength(1);
+  });
+
+  it('gives link health the copies to check, with their sizes', () => {
+    const refs = collectSources({ releases: [], sensors: {} } as never, record);
+    const exeUrl = copyUrl(record.base!, record.files[exeView.id]!);
+    expect(refs.get(exeUrl)).toEqual({ url: exeUrl, provider: 'github-archive', expectedSize: 161310152, expectedEtag: null });
+    expect(collectSources({ releases: [], sensors: {} } as never, { ...record, base: null }).size).toBe(0);
   });
 
   it('changes nothing without a record or an origin', () => {

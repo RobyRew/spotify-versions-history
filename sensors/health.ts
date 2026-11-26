@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { readLedger } from '../lib/ledger/io.ts';
 import { fromLegacy } from '../lib/ledger/legacy.ts';
+import type { ArchiveRecord } from './storage/archive.ts';
 import type { Ledger } from '../lib/ledger/schema.ts';
 import type { LegacyCatalog, LegacyOfficial } from '../lib/v1/catalog.ts';
 import { collectSources, healthAlerts, runHealth } from './health/check.ts';
@@ -48,7 +49,9 @@ const previousRaw = values.previous ? await readJson(values.previous) : null;
 const previous = previousRaw ? HealthFile.safeParse(previousRaw) : null;
 if (previous && !previous.success) console.error(`${values.previous} does not match the health schema; starting from no previous results`);
 
-const refs = collectSources(await loadLedger());
+// The archive's own copies (sensors/archive.ts) are checked like any other link.
+const archive = values.ledger ? null : (await readJson(join(values.legacy ?? 'site/data', 'archive.json'))) as ArchiveRecord | null;
+const refs = collectSources(await loadLedger(), archive);
 const { file, checked } = await runHealth(fetch, refs, { now, previous: previous?.success ? previous.data : null, all: values.all ?? false, only });
 await writeFile(values.out, JSON.stringify(file, null, 2) + '\n');
 console.log(`${refs.size} links, ${checked} checked in this run`);

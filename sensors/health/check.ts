@@ -13,6 +13,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { Ledger } from '../../lib/ledger/schema.ts';
+import { copyUrl, type ArchiveRecord } from '../storage/archive.ts';
 import { USER_AGENT } from '../lib/http.ts';
 import type { Fetch } from '../types.ts';
 import { HealthFile, summarize, type HealthEntry, type Provider } from './schema.ts';
@@ -67,8 +68,11 @@ export function dueNow(ref: SourceRef, now: Date, all: boolean): boolean {
   return all || EVERY_RUN.has(ref.provider) || weeklySlot(ref.url, now);
 }
 
-/** Every distinct download URL in the ledger with the size and ETag a healthy answer should carry. */
-export function collectSources(ledger: Ledger): Map<string, SourceRef> {
+/**
+ * Every distinct download URL in the ledger with the size and ETag a healthy answer should carry,
+ * plus the archive's own copies in R2 when their record (site/data/archive.json) is given.
+ */
+export function collectSources(ledger: Ledger, archive: ArchiveRecord | null = null): Map<string, SourceRef> {
   const refs = new Map<string, SourceRef>();
   const add = (url: string, size: number | null, etag: string | null) => {
     const existing = refs.get(url);
@@ -89,6 +93,7 @@ export function collectSources(ledger: Ledger): Map<string, SourceRef> {
       }
     }
   }
+  if (archive?.base) for (const file of Object.values(archive.files)) add(copyUrl(archive.base, file), file.size, null);
   return refs;
 }
 
