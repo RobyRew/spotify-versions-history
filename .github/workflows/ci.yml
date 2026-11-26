@@ -101,7 +101,7 @@ jobs:
     with:
       context: '.'
       dockerfile: 'web/Dockerfile'
-      # Set to true once the Dokploy app exists and DOKPLOY_DEPLOY_WEBHOOK is set.
-      request_deploy: false
+      # Asks Dokploy (app spotify-versions-history in Tools) to pull the new image.
+      request_deploy: true
     secrets:
       DOKPLOY_DEPLOY_WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}

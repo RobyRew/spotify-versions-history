@@ -63,7 +63,9 @@ The rules (comment text and links, limits, report threshold, download dedupe) ar
 `web/Dockerfile` (build context: the repository root) makes a non-root `node:26-alpine` image that
 runs the standalone server on port 4321 with `HEALTHCHECK NONE` (the host's probe calls `/healthz`).
 CI's `image` job builds it after the tests and pushes `ghcr.io/robyrew/spotify-versions-history`
-(`latest` and the commit SHA) when the site's inputs changed. Dokploy runs it as an application with:
+(`latest` and the commit SHA) when the site's inputs changed, then calls the repository secret
+`DOKPLOY_DEPLOY_WEBHOOK` so Dokploy pulls it. Dokploy runs it as the application
+`spotify-versions-history` (Tools project) at https://spotify-versions-history.robyrew.com, with:
 
 - the named volume `spotify-versions-history-data` at `/app/data` (`archive.db`, and
   `snapshot/archive.db`, the copy to restore from);
