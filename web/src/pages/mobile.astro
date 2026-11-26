@@ -1,0 +1,166 @@
+---
+/**
+ * Spotify for iPhone and iPad and for Android: the versions and updates the stores' public listings
+ * show, kept since the archive started reading them (sensors/mobile.ts). Metadata only: neither
+ * store's build can be downloaded and checked without an account.
+ */
+import Callout from '@robyrew/ui/components/Callout.astro';
+import EmptyState from '@robyrew/ui/components/EmptyState.astro';
+import Icon from '@robyrew/ui/components/Icon.astro';
+import PageHead from '@robyrew/ui/components/PageHead.astro';
+import Base from '../layouts/Base.astro';
+import { siteData } from '../lib/data.ts';
+import { formatBytes, formatDate } from '../lib/format.ts';
+
+const data = await siteData();
+const history = data.mobileHistory;
+const ios = history?.ios.versions ?? [];
+const android = history?.android.updates ?? [];
+const current = ios[0] ?? null;
+const APP_STORE = history?.ios.listing ?? 'https://apps.apple.com/us/app/spotify-music-and-podcasts/id324684580';
+const PLAY = history?.android.listing ?? 'https://play.google.com/store/apps/details?id=com.spotify.music';
+const days = (a: string, b: string) => Math.round((Date.parse(a) - Date.parse(b)) / 86_400_000);
+---
+
+<Base section="mobile" title="iPhone, iPad and Android" description="Every Spotify version for iPhone and iPad and every Android update the stores' listings have shown, with dates.">
+  <PageHead eyebrow="Phones and tablets" title="iPhone, iPad and Android" icon="phone"
+    lead="The versions and updates Apple’s and Google’s public listings show, kept here as they appear. These builds install only through their store, so the archive records them and links to the listing." />
+
+  <section id="ios" aria-labelledby="ios-title">
+    <div class="section-head"><h2 id="ios-title">iPhone and iPad</h2><a href={APP_STORE} rel="noopener">App Store <Icon name="external" size={13} /></a></div>
+    {
+      current && (
+        <div class="rw-card now">
+          <span class="now__mark" aria-hidden="true"><Icon name="apple" size={24} /></span>
+          <div class="now__main">
+            <p class="now__label">Current version</p>
+            <p class="now__version mono">{current.version}</p>
+            <p class="now__meta">
+              Released {formatDate(current.releasedAt)}
+              {current.minimumOsVersion && <> · iOS {current.minimumOsVersion} or later</>}
+              {current.sizeBytes && <> · {formatBytes(current.sizeBytes)}</>}
+            </p>
+          </div>
+          <a class="rw-btn rw-btn--primary" href={APP_STORE} rel="noopener"><Icon name="external" size={16} />Open in the App Store</a>
+        </div>
+      )
+    }
+    {
+      ios.length === 0 ? (
+        <EmptyState title="No versions recorded yet" icon="phone" bordered><p>The next store refresh reads the App Store’s version history.</p></EmptyState>
+      ) : (
+        <ol class="rw-card rl-list mlist" aria-label="iOS versions">
+          {ios.map((entry, index) => (
+            <li class:list={['rl', 'mrow', { 'rl--latest': index === 0 }]}>
+              <span class="rl__dot" aria-hidden="true" />
+              <div class="rl__main">
+                <span class="rl__version"><span class="mono">{entry.version}</span>{index === 0 && <span class="rw-badge rw-badge--accent">Current</span>}</span>
+                <span class="rl__meta"><time datetime={entry.releasedAt}>{formatDate(entry.releasedAt)}</time></span>
+              </div>
+              <span class="mrow__gap">{ios[index + 1] ? `${days(entry.releasedAt, ios[index + 1]!.releasedAt)} days after ${ios[index + 1]!.version}` : 'oldest recorded'}</span>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+    <p class="note">Version history only: an App Store build is encrypted for, and installs only on, the account that downloaded it, so the archive does not keep or link files for iOS.</p>
+  </section>
+
+  <section id="android" aria-labelledby="android-title">
+    <div class="section-head"><h2 id="android-title">Android</h2><a href={PLAY} rel="noopener">Google Play <Icon name="external" size={13} /></a></div>
+    <Callout tone="info" role="note">
+      Google Play does not publish Spotify’s version number: the app ships a build per device. The archive records each
+      update’s date, and the newest app version that Play’s reviews name at the time, marked as reported by reviewers.
+    </Callout>
+    {
+      android.length === 0 ? (
+        <EmptyState title="No updates recorded yet" icon="android" bordered><p>The next store refresh reads Google Play’s listing.</p></EmptyState>
+      ) : (
+        <ol class="rw-card rl-list mlist" aria-label="Android updates">
+          {android.map((update, index) => (
+            <li class:list={['rl', 'mrow', { 'rl--latest': index === 0 }]}>
+              <span class="rl__dot" aria-hidden="true" />
+              <div class="rl__main">
+                <span class="rl__version"><span>Updated {formatDate(update.updatedAt)}</span>{index === 0 && <span class="rw-badge rw-badge--accent">Latest</span>}</span>
+                <span class="rl__meta">first seen here {formatDate(update.firstSeen)}</span>
+              </div>
+              <span class="mrow__gap">{update.reportedVersion ? <>reviewers report <span class="mono">{update.reportedVersion}</span></> : 'no version reported'}</span>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+    <p class="note">The Android builds download only through Google Play with a Google account; the archive keeps update dates until a capture with its own account is set up.</p>
+  </section>
+</Base>
+
+<style>
+  .section-head a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .now {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.2rem;
+    margin-bottom: 0.9rem;
+    padding: 1.1rem 1.2rem;
+  }
+  .now__mark {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.9rem;
+    background: var(--rw-fill);
+  }
+  .now__main {
+    flex: 1 1 14rem;
+  }
+  .now__main p {
+    margin: 0;
+  }
+  .now__label {
+    color: var(--ink-3);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .now__version {
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+  .now__meta {
+    color: var(--ink-2);
+    font-size: 0.9rem;
+  }
+  .mrow {
+    grid-template-columns: 0.6rem minmax(0, 1fr) auto;
+  }
+  .mrow__gap {
+    color: var(--ink-3);
+    font-size: 0.86rem;
+    text-align: right;
+  }
+  @media (max-width: 719px) {
+    .mrow {
+      grid-template-areas: 'dot main' 'dot gap';
+      grid-template-columns: 0.6rem minmax(0, 1fr);
+    }
+    .mrow__gap {
+      grid-area: gap;
+      text-align: left;
+    }
+  }
+  .note {
+    margin: 0.8rem 0 0;
+    color: var(--ink-3);
+    font-size: 0.86rem;
+  }
+  :global(.rw-callout) {
+    margin-bottom: 0.9rem;
+  }
+</style>

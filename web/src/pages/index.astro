@@ -43,9 +43,18 @@ const notOk = verified.filter(artifact => !artifact.ok).length;
 const probedAt = data.health?.generatedAt ?? data.verification?.generatedAt ?? null;
 
 const mobile = data.mobile as { ios?: { version?: string; releaseDate?: string; listing?: string }; windowsStore?: { lastUpdate?: string; listing?: string } } | null;
+// Phones and tablets link to /mobile, which keeps their history and the store links.
+const iosNow = data.mobileHistory?.ios.versions[0] ?? null;
+const androidNow = data.mobileHistory?.android.updates[0] ?? null;
 const stores = [
-  { name: 'iPhone and iPad', icon: 'apple' as const, store: 'App Store', version: mobile?.ios?.version ?? null, date: mobile?.ios?.releaseDate ?? null, href: mobile?.ios?.listing ?? 'https://apps.apple.com/app/id324684580' },
-  { name: 'Android', icon: 'android' as const, store: 'Google Play', version: null, date: null, href: 'https://play.google.com/store/apps/details?id=com.spotify.music' },
+  {
+    name: 'iPhone and iPad', icon: 'apple' as const, href: '/mobile#ios',
+    detail: iosNow ? `App Store · ${iosNow.version} · ${formatDate(iosNow.releasedAt)} · ${data.mobileHistory!.ios.versions.length} versions recorded` : `App Store${mobile?.ios?.version ? ` · ${mobile.ios.version}` : ''}`,
+  },
+  {
+    name: 'Android', icon: 'android' as const, href: '/mobile#android',
+    detail: androidNow ? `Google Play · updated ${formatDate(androidNow.updatedAt)}${androidNow.reportedVersion ? ` · reviewers report ${androidNow.reportedVersion}` : ''}` : 'Google Play',
+  },
 ];
 const msStore = { date: mobile?.windowsStore?.lastUpdate ?? null, href: mobile?.windowsStore?.listing ?? 'https://apps.microsoft.com/detail/9ncbcszsjrsb' };
 
@@ -122,13 +131,13 @@ const ago = (ms: number) => {
   <div class="stores">
     {
       stores.map(store => (
-        <a class="rw-card rw-card--interactive store reveal" href={store.href} rel="noopener">
+        <a class="rw-card rw-card--interactive store reveal" href={store.href}>
           <span class="store__mark" aria-hidden="true"><Icon name={store.icon} size={20} /></span>
           <span class="store__text">
             <strong>{store.name}</strong>
-            <span>{store.store}{store.version ? ` · ${store.version}` : ''}{store.date ? ` · ${formatDate(store.date)}` : ''}</span>
+            <span>{store.detail}</span>
           </span>
-          <Icon name="external" size={15} />
+          <Icon name="chevronRight" size={16} />
         </a>
       ))
     }

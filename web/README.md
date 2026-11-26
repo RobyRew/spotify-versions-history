@@ -31,6 +31,7 @@ seeded people (`mira` has the `moderator` role, `carol` has no handle yet) and k
 | --- | --- | --- |
 | `LEDGER_DIR` | — | ledger files (`lib/ledger/io.ts`); used when set |
 | `LEGACY_DATA_URL` | — | a base URL for the v1 data files (`catalog.json`, `official.json`, `mobile.json`); tried first, refreshed every ten minutes |
+| `GITHUB_RUNS_REPO` | `RobyRew/spotify-versions-history` | where the probes page reads the probe workflows' last runs (unauthenticated GitHub API, four calls per refresh); `off` skips it |
 | `LEGACY_DATA_DIR` | `../site/data` | the v1 data files, converted with `fromLegacy` until the ledger files are committed; the fallback when `LEGACY_DATA_URL` cannot be read at start |
 | `HEALTH_URL` / `HEALTH_FILE` | `.data/health.json` | link health, as `sensors/health.ts` writes it |
 | `VERIFICATION_URL` / `VERIFICATION_FILE` | `.data/verification.json` | the merged report `sensors/verify.ts merge` writes |
@@ -84,7 +85,8 @@ CI's `image` job builds it after the tests and pushes `ghcr.io/robyrew/spotify-v
 | `/` | the newest build per platform (first-party links before the mirror), store listings, recent releases, probe status |
 | `/versions` | every release; GET filters (`q`, `platform`, `arch`, `signed`, `live`, `sort`: newest, oldest, downloads, trending, liked, discussed) and Load more |
 | `/v/{product}/{version}` | one release: its files, hashes, verification, every link, permanent links, the commands to check a file by hand, likes, reactions and comments |
-| `/probes` | the latest verification report and link health per source |
+| `/probes` | one card per platform (watched source, the workflow's last run from GitHub's public API, signature checks, link health), then the latest verification report and link health per source |
+| `/mobile` | iPhone/iPad version history and Android update dates from the stores' listings (`site/data/mobile-history.json`, kept by `sensors/mobile-history.ts`) |
 | `/api`, `/about` | the API reference and how the archive works |
 | `/api/v2/…` | JSON: `releases`, `releases/{product}/{version}`, `latest[/{platform}/{arch}]`, `verification`, `health` |
 | `/dl/{artifact id}` | a permanent link: 302 to the best live copy; a browser GET counts one download per visitor, file and day |

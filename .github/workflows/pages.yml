@@ -31,17 +31,22 @@ jobs:
           ref: main
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version: '26'
       - name: Refresh version metadata
         run: node site/scripts/update-catalog.mjs
       - name: Refresh iOS and Store version sensors
         run: node site/scripts/probe-mobile.mjs
+      # iOS and Android version history from the stores' public listings (sensors/mobile.ts); a source
+      # that cannot be read leaves the file as it is.
+      - name: Refresh the iOS and Android version history
+        continue-on-error: true
+        run: node sensors/mobile-history.ts site/data/mobile-history.json
       - name: Validate refreshed catalog
         run: node --test scripts/test-site.mjs
       - name: Commit only a changed catalog
         id: snapshot
         run: |
-          git add site/data/catalog.json site/data/mobile.json
+          git add site/data/catalog.json site/data/mobile.json site/data/mobile-history.json
           if git diff --cached --quiet; then
             echo 'changed=false' >> "$GITHUB_OUTPUT"
           else

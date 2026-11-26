@@ -23,6 +23,7 @@ import type { LegacyCatalog, LegacyOfficial } from '../../../lib/v1/catalog.ts';
 import { HealthFile } from '../../../sensors/health/schema.ts';
 import type { MergedReport } from '../../../sensors/verify/report.ts';
 import { releaseViews, type ReleaseView } from '../../../lib/site/model.ts';
+import type { MobileHistory } from '../../../sensors/mobile.ts';
 
 const REFRESH_MS = 10 * 60_000;
 const FETCH_TIMEOUT_MS = 20_000;
@@ -42,15 +43,66 @@ const Report = z.object({
   }).loose()),
 });
 
+/** The newest finished run of one probe workflow, from GitHub's public API. */
+export interface WorkflowRun {
+  workflow: string;
+  conclusion: string | null;
+  startedAt: string;
+  url: string;
+}
+
 export interface SiteData {
   releases: ReleaseView[];
   ledger: Ledger;
   mobile: MobileState | null;
+  /** iOS versions and Android updates (sensors/mobile.ts), or null. */
+  mobileHistory: MobileHistory | null;
   health: HealthFile | null;
   verification: MergedReport | null;
+  /** The probe workflows' newest finished runs, by file name; empty when GitHub cannot be asked. */
+  runs: Record<string, WorkflowRun>;
   loadedAt: string;
   /** Where each input came from, or why it is missing. */
   inputs: { ledger: string; health: string; verification: string };
+}
+
+const RUNS_REPO = process.env.GITHUB_RUNS_REPO ?? 'RobyRew/spotify-versions-history';
+const PROBE_WORKFLOWS = ['watch-spotify.yml', 'health.yml', 'verify.yml', 'pages.yml'] as const;
+
+/** The newest finished run of each probe workflow (4 unauthenticated calls per refresh: 24 an hour). */
+async function loadRuns(): Promise<Record<string, WorkflowRun>> {
+  if (RUNS_REPO === 'off') return {};
+  const runs: Record<string, WorkflowRun> = {};
+  await Promise.all(PROBE_WORKFLOWS.map(async workflow => {
+    try {
+      const response = await fetch(`https://api.github.com/repos/${RUNS_REPO}/actions/workflows/${workflow}/runs?branch=main&status=completed&per_page=1`, {
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        headers: { accept: 'application/vnd.github+json', 'user-agent': 'spotify-versions-history-site' },
+      });
+      if (!response.ok) return;
+      const run = ((await response.json()) as { workflow_runs?: { conclusion: string | null; run_started_at: string; html_url: string }[] }).workflow_runs?.[0];
+      if (run) runs[workflow] = { workflow, conclusion: run.conclusion, startedAt: run.run_started_at, url: run.html_url };
+    } catch {
+      // GitHub unreachable or rate-limited: the probes page says the run is unknown.
+    }
+  }));
+  return runs;
+}
+
+/** mobile-history.json from LEGACY_DATA_URL, else from LEGACY_DATA_DIR; null when neither has it. */
+async function loadMobileHistory(): Promise<MobileHistory | null> {
+  if (process.env.LEGACY_DATA_URL) {
+    try {
+      return (await readJsonUrl(new URL('mobile-history.json', process.env.LEGACY_DATA_URL.replace(/\/?$/, '/')).href)) as MobileHistory;
+    } catch {
+      // Fall through to the bundled copy.
+    }
+  }
+  try {
+    return (await readJsonFile(resolve(process.env.LEGACY_DATA_DIR ?? '../site/data', 'mobile-history.json'))) as MobileHistory;
+  } catch {
+    return null;
+  }
 }
 
 async function readJsonFile(path: string): Promise<unknown> {
@@ -108,10 +160,12 @@ async function optional<T>(url: string | undefined, file: string, parse: (value:
 
 async function load(fallback: boolean): Promise<SiteData> {
   const now = new Date();
-  const [{ ledger, from }, health, verification] = await Promise.all([
+  const [{ ledger, from }, health, verification, mobileHistory, runs] = await Promise.all([
     loadLedger(fallback),
     optional(process.env.HEALTH_URL, process.env.HEALTH_FILE ?? '.data/health.json', value => HealthFile.parse(value)),
     optional(process.env.VERIFICATION_URL, process.env.VERIFICATION_FILE ?? '.data/verification.json', value => Report.parse(value) as unknown as MergedReport),
+    loadMobileHistory(),
+    loadRuns(),
   ]);
   // A refresh that cannot read an optional input keeps the copy it already has.
   const keptHealth = health.value ?? cache?.data.health ?? null;
@@ -120,8 +174,10 @@ async function load(fallback: boolean): Promise<SiteData> {
     releases: releaseViews(ledger, keptHealth, keptVerification, now),
     ledger,
     mobile: ledger.sensors.mobile,
+    mobileHistory: mobileHistory ?? cache?.data.mobileHistory ?? null,
     health: keptHealth,
     verification: keptVerification,
+    runs: Object.keys(runs).length > 0 ? runs : (cache?.data.runs ?? {}),
     loadedAt: now.toISOString(),
     inputs: {
       ledger: from,

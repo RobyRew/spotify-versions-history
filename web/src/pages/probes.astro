@@ -3,14 +3,43 @@ import Callout from '@robyrew/ui/components/Callout.astro';
 import Disclosure from '@robyrew/ui/components/Disclosure.astro';
 import PageHead from '@robyrew/ui/components/PageHead.astro';
 import StatusDot from '@robyrew/ui/components/StatusDot.astro';
+import Icon from '@robyrew/ui/components/Icon.astro';
 import Base from '../layouts/Base.astro';
 import PlatformLabel from '../components/PlatformLabel.astro';
 import { LEVEL_LABELS, type Arch, type Platform } from '../../../lib/site/model.ts';
 import { PROVIDERS, STATUSES } from '../../../sensors/health/schema.ts';
+import { platformProbes, type ProbePlatform, type ProbeState } from '../../../lib/site/probes.ts';
 import { siteData } from '../lib/data.ts';
-import { formatBytes, formatDateTime } from '../lib/format.ts';
+import { formatBytes, formatDate, formatDateTime } from '../lib/format.ts';
 
 const data = await siteData();
+const now = new Date();
+const RELATIVE = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+/** Recent times as "2 hours ago", older ones as a date. */
+const when = (iso: string) => {
+  const ms = Date.parse(iso) - now.getTime();
+  if (!Number.isFinite(ms)) return '—';
+  const minutes = Math.round(ms / 60_000);
+  if (Math.abs(minutes) < 60) return RELATIVE.format(minutes, 'minute');
+  if (Math.abs(minutes) < 48 * 60) return RELATIVE.format(Math.round(minutes / 60), 'hour');
+  return formatDate(iso);
+};
+const watched = (data.ledger.sensors.permanentUrls.watched ?? {}) as Record<string, { lastModified?: string | null; changedAt?: string | null }>;
+const cards = platformProbes({
+  now,
+  releases: data.releases,
+  verification: data.verification,
+  health: data.health as unknown as { generatedAt: string; summary: Record<string, Record<string, number>> } | null,
+  watched,
+  mobile: data.mobile as { ios?: { version?: string; releaseDate?: string }; windowsStore?: { lastUpdate?: string } } | null,
+  mobileHistory: data.mobileHistory,
+  runs: data.runs,
+}, when);
+const ICONS: Record<ProbePlatform, 'windows' | 'apple' | 'linux' | 'store' | 'android'> = { windows: 'windows', macos: 'apple', linux: 'linux', 'windows-store': 'store', ios: 'apple', android: 'android' };
+const STATE_WORDS: Record<ProbeState, string> = { ok: 'Working', warn: 'Needs a look', danger: 'Failing', unknown: 'No data yet' };
+// Spotify's own update service is asked only with a Spotify account (repository secret SPOTIFY_CREDENTIALS).
+const serviceCheckedAt = (data.ledger.sensors.updateService as { checkedAt?: string } | null)?.checkedAt ?? null;
+const serviceStale = !serviceCheckedAt || now.getTime() - Date.parse(serviceCheckedAt) > 3 * 86_400_000;
 const report = data.verification;
 const health = data.health;
 const providerNames: Record<(typeof PROVIDERS)[number], string> = {
@@ -31,7 +60,46 @@ const providers = PROVIDERS.filter(provider => total(provider) > 0);
 
 <Base section="probes" title="Probes" description="What the archive's probes saw last: the verification of the current builds and the health of every download link.">
   <PageHead eyebrow="Status" title="Probes" icon="activity"
-    lead="The current builds are downloaded and checked every day on Linux, macOS and Windows; every download link is asked whether it still answers, on a schedule per source." />
+    lead="One card per platform: what each probe watches, when it last ran, how the current builds’ signature checks came out and whether the download links answer. The full reports follow." />
+
+  <section class="pgrid" aria-label="Platforms">
+    {
+      cards.map(card => (
+        <article class:list={['rw-card', 'probe', `probe--${card.state}`]} id={`probe-${card.id}`} aria-labelledby={`probe-${card.id}-title`}>
+          <header class="probe__head">
+            <span class="probe__mark" aria-hidden="true"><Icon name={ICONS[card.id]} size={20} /></span>
+            <h2 id={`probe-${card.id}-title`}>{card.name}</h2>
+            <StatusDot status={card.state} label={STATE_WORDS[card.state]} />
+          </header>
+          {card.newest && (
+            <p class="probe__newest">
+              {card.newest.version ? <span class="mono">{card.newest.version}</span> : <span class="probe__plain">{card.newest.note ?? 'Updated'}</span>}
+              {card.newest.date && <span class="probe__date">{formatDate(card.newest.date)}</span>}
+            </p>
+          )}
+          <dl class="probe__lines">
+            {card.lines.map(line => (
+              <div>
+                <dt>{line.label}</dt>
+                <dd>
+                  <StatusDot status={line.state} hideLabel />
+                  {line.href ? <a href={line.href}>{line.value}</a> : <span>{line.value}</span>}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {card.note && <p class="probe__note">{card.note}</p>}
+        </article>
+      ))
+    }
+  </section>
+  {
+    serviceStale && (
+      <Callout tone="warn" title="Spotify’s own update service is not being asked" role="note" class="service-note">
+        <p class="service-note__text">This probe asks Spotify’s update service for the newest build before it reaches the public installers. It needs a Spotify account, stored as the repository secret <code>SPOTIFY_CREDENTIALS</code>, and last ran {serviceCheckedAt ? `on ${formatDate(serviceCheckedAt)}` : 'never'}. The other probes do not depend on it.</p>
+      </Callout>
+    )
+  }
 
   <section id="verification">
     <div class="section-head">
@@ -115,6 +183,100 @@ const providers = PROVIDERS.filter(provider => total(provider) > 0);
 </Base>
 
 <style>
+  .pgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: 0.9rem;
+    margin: 1.6rem 0 1rem;
+  }
+  .probe {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem 1.1rem;
+  }
+  .probe--danger {
+    border-color: color-mix(in oklab, var(--rw-danger) 55%, var(--hair));
+  }
+  .probe--warn {
+    border-color: color-mix(in oklab, var(--rw-warn) 45%, var(--hair));
+  }
+  .probe__head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .probe__head h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 650;
+  }
+  .probe__mark {
+    display: grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 0.7rem;
+    background: var(--rw-fill);
+  }
+  .probe__newest {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  .probe__date {
+    color: var(--ink-3);
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .probe__lines {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+  }
+  .probe__lines dt {
+    color: var(--ink-3);
+    font-size: 0.74rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .probe__lines dd {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin: 0.1rem 0 0;
+    color: var(--ink-2);
+    font-size: 0.88rem;
+  }
+  .probe__lines a {
+    color: var(--ink-2);
+  }
+  .probe__lines a:hover {
+    color: var(--accent);
+  }
+  .probe__note {
+    margin: auto 0 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--hair-soft);
+    color: var(--ink-3);
+    font-size: 0.82rem;
+  }
+  :global(.service-note) {
+    margin-bottom: 1.2rem;
+  }
+  .service-note__text {
+    margin: 0;
+  }
+  .probe__plain {
+    color: var(--ink-2);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
   section {
     margin-bottom: 1rem;
   }

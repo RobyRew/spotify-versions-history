@@ -6,7 +6,7 @@ import { themeBootstrap } from '@robyrew/web-config/theme-bootstrap';
 import { community, ID_SITE, signInHref, viewerOf, type SiteUser } from '../lib/community.ts';
 import '../styles/global.css';
 
-type Section = 'home' | 'versions' | 'probes' | 'api' | 'about' | 'release' | 'admin';
+type Section = 'home' | 'versions' | 'mobile' | 'probes' | 'api' | 'about' | 'release' | 'admin';
 
 interface Props {
   title?: string;
@@ -28,6 +28,7 @@ const pageTitle = title ? `${title} · Spotify Versions` : 'Spotify Versions —
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const links = [
   { label: 'Versions', href: '/versions', current: section === 'versions' || section === 'release', icon: 'history' as const },
+  { label: 'Mobile', href: '/mobile', current: section === 'mobile', icon: 'phone' as const },
   { label: 'Probes', href: '/probes', current: section === 'probes', icon: 'activity' as const },
   { label: 'API', href: '/api', current: section === 'api', icon: 'braces' as const },
   { label: 'About', href: '/about', current: section === 'about', icon: 'info' as const },
