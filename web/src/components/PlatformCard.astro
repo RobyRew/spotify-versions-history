@@ -1,0 +1,173 @@
+---
+/**
+ * One desktop platform on the home page: a row per architecture with its newest build, the check it
+ * passed and its download, then a link to the platform's full history. The visitor's system is marked.
+ */
+import Icon from '@robyrew/ui/components/Icon.astro';
+import type { LatestDownload, Platform } from '../../../lib/site/model.ts';
+import { ARCH_LABELS, FORMAT_LABELS, PLATFORM_LABELS } from '../../../lib/site/model.ts';
+import type { Device } from '../lib/device.ts';
+import { formatBytes, formatDate, PLATFORM_ICONS } from '../lib/format.ts';
+import DownloadButton from './DownloadButton.astro';
+import VerificationBadge from './VerificationBadge.astro';
+
+interface Props {
+  platform: Platform;
+  entries: readonly LatestDownload[];
+  device: Device | null;
+  /** How many releases have a file for this platform. */
+  releases: number;
+}
+
+const { platform, entries, device, releases } = Astro.props;
+const mine = device?.platform === platform;
+const name = PLATFORM_LABELS[platform];
+---
+
+<article class:list={['rw-card', 'pcard', 'reveal', { 'pcard--device': mine }]} id={platform} aria-labelledby={`pcard-${platform}`}>
+  <header class="pcard__head">
+    <span class="pcard__mark" aria-hidden="true"><Icon name={PLATFORM_ICONS[platform]} size={22} /></span>
+    <h3 id={`pcard-${platform}`}>{name}</h3>
+    {mine && <span class="rw-badge rw-badge--accent">Your system</span>}
+  </header>
+  <ul class="pcard__rows">
+    {
+      entries.map(({ arch, release, artifact, newer }) => (
+        <li class:list={['pcard__row', { 'pcard__row--device': mine && device?.arch === arch }]}>
+          <div class="pcard__info">
+            <p class="pcard__arch">{ARCH_LABELS[arch]}</p>
+            <a class="pcard__version mono" href={`/v/${release.product}/${release.version}`} data-vt-release={`/v/${release.product}/${release.version}`}>{release.version}</a>
+            <p class="pcard__meta">{formatDate(artifact.date ?? release.date)} · {FORMAT_LABELS[artifact.format]} · {formatBytes(artifact.size)}</p>
+            {newer && (
+              <p class="pcard__newer">
+                Newer on the mirror: <a class="mono" href={`/v/${newer.release.product}/${newer.release.version}`}>{newer.release.version}</a>
+              </p>
+            )}
+          </div>
+          <div class="pcard__actions">
+            <VerificationBadge verification={artifact.verification} />
+            <DownloadButton artifact={artifact} version={release.version} primary={mine ? device?.arch === arch : true} />
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+  <slot name="extra" />
+  <a class="pcard__all" href={`/versions?platform=${platform}`}>
+    All {releases} {name} releases <Icon name="arrowRight" size={15} />
+  </a>
+</article>
+
+<style>
+  .pcard {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  .pcard--device {
+    border-color: color-mix(in oklab, var(--accent) 55%, var(--hair));
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent), var(--rw-e1);
+  }
+  .pcard__head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 1rem 1.1rem 0.6rem;
+  }
+  .pcard__head h3 {
+    flex: 1;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .pcard__mark {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.75rem;
+    background: var(--rw-fill);
+    color: var(--ink);
+  }
+  .pcard--device .pcard__mark {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .pcard__rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .pcard__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+    padding: 0.85rem 1.1rem;
+    border-top: 1px solid var(--hair-soft);
+  }
+  .pcard__row--device {
+    background: color-mix(in oklab, var(--accent) 6%, transparent);
+  }
+  .pcard__info {
+    min-width: 0;
+  }
+  .pcard__arch {
+    margin: 0;
+    color: var(--ink-3);
+    font-size: 0.78rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .pcard__version {
+    display: inline-block;
+    margin-top: 0.15rem;
+    color: var(--ink);
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .pcard__version:hover {
+    color: var(--accent);
+  }
+  .pcard__meta,
+  .pcard__newer {
+    margin: 0.1rem 0 0;
+    color: var(--ink-3);
+    font-size: 0.82rem;
+  }
+  .pcard__newer a {
+    color: var(--ink-2);
+  }
+  .pcard__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .pcard__all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: auto;
+    padding: 0.8rem 1.1rem;
+    border-top: 1px solid var(--hair-soft);
+    color: var(--ink-2);
+    font-size: 0.88rem;
+    text-decoration: none;
+  }
+  .pcard__all:hover {
+    color: var(--accent);
+  }
+  .pcard__all :global(svg) {
+    transition: transform 0.2s var(--rw-ease-out);
+  }
+  .pcard__all:hover :global(svg) {
+    transform: translateX(3px);
+  }
+</style>

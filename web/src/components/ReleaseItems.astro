@@ -1,0 +1,58 @@
+---
+/**
+ * Release rows for an `<ol class="rl-list">`: a timeline dot, the version and its build, the platforms,
+ * whether a file was checked and how many links answer. The whole row is the version's link. The
+ * versions page's Load more fetches the next page and appends these `<li>`s to the same list, so each
+ * row carries everything it shows. Styles are global (src/styles/global.css) because appended rows
+ * come from another page's render.
+ */
+import Icon from '@robyrew/ui/components/Icon.astro';
+import type { ReleaseView } from '../../../lib/site/model.ts';
+import { formatDate } from '../lib/format.ts';
+import PlatformLabel from './PlatformLabel.astro';
+
+interface Props {
+  releases: readonly ReleaseView[];
+  /** The newest release's version, marked "Latest". */
+  latest?: string;
+}
+
+const { releases, latest } = Astro.props;
+---
+
+{
+  releases.map(release => {
+    const href = `/v/${release.product}/${release.version}`;
+    const live = release.artifacts.filter(artifact => artifact.best).length;
+    const build = release.fullVersion.slice(release.version.length + 1);
+    return (
+      <li class:list={['rl', { 'rl--signed': release.signed, 'rl--latest': release.version === latest }]}>
+        <span class="rl__dot" aria-hidden="true" />
+        <div class="rl__main">
+          <a class="rl__version" href={href} data-vt-release={href}>
+            <span class="mono">{release.version}</span>
+            {release.version === latest && <span class="rw-badge rw-badge--accent">Latest</span>}
+          </a>
+          <span class="rl__meta">
+            {release.date ? <time datetime={release.date}>{formatDate(release.date)}</time> : <span>Date unknown</span>}
+            {build && <span class="mono rl__build">{build}</span>}
+          </span>
+        </div>
+        <span class="rl__platforms">
+          {release.platforms.map(platform => <PlatformLabel platform={platform} compact />)}
+        </span>
+        <span class="rl__checked">
+          {release.signed ? (
+            <span class="rw-badge rw-badge--ok"><Icon name="shield" size={13} />Signed</span>
+          ) : (
+            <span class="rl__quiet">Not checked</span>
+          )}
+        </span>
+        <span class:list={['rl__links', { 'rl__quiet': live === 0 }]}>
+          {live === 0 ? 'No live link' : `${live} of ${release.artifacts.length} live`}
+        </span>
+        <Icon name="chevronRight" size={16} class="rl__go" />
+      </li>
+    );
+  })
+}

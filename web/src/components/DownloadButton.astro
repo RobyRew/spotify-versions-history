@@ -15,9 +15,11 @@ interface Props {
   size?: 'sm' | 'md' | 'lg';
   primary?: boolean;
   block?: boolean;
+  /** The main half's text. Default "Download". */
+  label?: string;
 }
 
-const { artifact, version, size = 'sm', primary = true, block = false } = Astro.props;
+const { artifact, version, size = 'sm', primary = true, block = false, label = 'Download' } = Astro.props;
 const items: Mirror[] = artifact.sources.map(source => ({
   label: source.label,
   href: source.usable ? source.url : null,
@@ -30,7 +32,7 @@ const name = platformName(artifact.platform, artifact.arch);
 ---
 
 <SplitButton
-  label={artifact.best ? 'Download' : 'No live link'}
+  label={artifact.best ? label : 'No live link'}
   href={artifact.best?.url ?? null}
   icon="download"
   mainLabel={`Download ${version} for ${name}${artifact.size ? `, ${formatBytes(artifact.size)}` : ''}`}

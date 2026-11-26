@@ -1,4 +1,5 @@
 ---
+import Icon from '@robyrew/ui/components/Icon.astro';
 import SiteHeader from '@robyrew/ui/components/SiteHeader.astro';
 import { themeBootstrap } from '@robyrew/web-config/theme-bootstrap';
 import '../styles/global.css';
@@ -65,19 +66,39 @@ const year = new Date().getUTCFullYear();
     </main>
     <footer class="site-footer">
       <div class="site-footer__inner">
-        <p>
-          Not affiliated with or endorsed by Spotify. The archive lists Spotify’s own, unmodified builds only, served from
-          Spotify, the store that distributes them or a mirror. Files it captured are checked against their publisher’s
-          signature; the others say they are not checked yet.
-        </p>
-        <p class="site-footer__links">
-          <a href="/about">How it works</a>
-          <a href="/api">API</a>
-          <a href="https://github.com/RobyRew/spotify-versions-history">Source</a>
-          <span>© {year} RobyRew</span>
-        </p>
+        <div class="site-footer__about">
+          <p class="site-footer__name"><span aria-hidden="true"><Icon name="history" size={15} /></span>Spotify Versions</p>
+          <p>
+            Not affiliated with or endorsed by Spotify. The archive lists Spotify’s own, unmodified builds only, served
+            from Spotify, the store that distributes them or a mirror. Files it captured are checked against their
+            publisher’s signature; the others say they are not checked yet.
+          </p>
+        </div>
+        <nav class="site-footer__cols" aria-label="Footer">
+          <div>
+            <h2>Archive</h2>
+            <a href="/versions">Versions</a>
+            <a href="/probes">Probes</a>
+            <a href="/about">How it works</a>
+          </div>
+          <div>
+            <h2>Data</h2>
+            <a href="/api">API reference</a>
+            <a href="/api/v2/releases">Releases JSON</a>
+            <a href="/api/v2/latest">Latest JSON</a>
+          </div>
+          <div>
+            <h2>Project</h2>
+            <a href="https://github.com/RobyRew/spotify-versions-history">Source</a>
+            <a href="https://github.com/RobyRew/spotify-versions-history/issues">Report a problem</a>
+          </div>
+        </nav>
       </div>
+      <p class="site-footer__base">© {year} RobyRew</p>
     </footer>
+    <script>
+      import '../scripts/transitions.ts';
+    </script>
   </body>
 </html>
 
@@ -85,29 +106,74 @@ const year = new Date().getUTCFullYear();
   .site-footer {
     border-top: 1px solid var(--hair);
     background: var(--ground-2);
+    color: var(--ink-3);
+    font-size: 0.86rem;
   }
   .site-footer__inner {
+    display: grid;
+    gap: 1.6rem 3rem;
     max-width: var(--site-max);
     margin-inline: auto;
-    padding: 1.5rem var(--gutter) calc(1.5rem + env(safe-area-inset-bottom));
-    color: var(--ink-3);
-    font-size: 0.85rem;
+    padding: 2rem var(--gutter) 1.2rem;
+  }
+  @media (min-width: 860px) {
+    .site-footer__inner {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    }
+  }
+  .site-footer__about p {
+    max-width: 36rem;
+    margin: 0;
     line-height: 1.55;
   }
-  .site-footer__inner p {
-    margin: 0 0 0.6rem;
-    max-width: 52rem;
+  .site-footer__about .site-footer__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+    color: var(--ink);
+    font-weight: 650;
+    font-size: 0.95rem;
   }
-  .site-footer__links {
+  .site-footer__name span {
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 0.5rem;
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .site-footer__cols {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .site-footer__cols div {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 1.2rem;
+    flex-direction: column;
+    gap: 0.45rem;
   }
-  .site-footer__links a {
+  .site-footer__cols h2 {
+    margin: 0 0 0.15rem;
     color: var(--ink-2);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .site-footer__cols a {
+    color: var(--ink-3);
     text-decoration: none;
   }
-  .site-footer__links a:hover {
+  .site-footer__cols a:hover {
     color: var(--accent);
+  }
+  .site-footer__base {
+    max-width: var(--site-max);
+    margin: 0 auto;
+    padding: 0.9rem var(--gutter) calc(1.2rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--hair-soft);
+    font-size: 0.8rem;
   }
 </style>

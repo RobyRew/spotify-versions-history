@@ -4,13 +4,13 @@ import CopyField from '@robyrew/ui/components/CopyField.astro';
 import Disclosure from '@robyrew/ui/components/Disclosure.astro';
 import EmptyState from '@robyrew/ui/components/EmptyState.astro';
 import Icon from '@robyrew/ui/components/Icon.astro';
-import PageHead from '@robyrew/ui/components/PageHead.astro';
 import Base from '../../../layouts/Base.astro';
 import DownloadButton from '../../../components/DownloadButton.astro';
 import PlatformLabel from '../../../components/PlatformLabel.astro';
 import VerificationBadge from '../../../components/VerificationBadge.astro';
-import { findRelease, FORMAT_LABELS, neighbours } from '../../../../../lib/site/model.ts';
+import { findRelease, FORMAT_LABELS, neighbours, PLATFORM_LABELS } from '../../../../../lib/site/model.ts';
 import { siteData } from '../../../lib/data.ts';
+import { deviceFromHeaders } from '../../../lib/device.ts';
 import { formatBytes, formatDate, platformName, shortHash } from '../../../lib/format.ts';
 
 const data = await siteData();
@@ -21,6 +21,17 @@ const around = release ? neighbours(data.releases, release) : { newer: null, old
 const checked = release ? release.artifacts.filter(artifact => artifact.verification) : [];
 const platforms = release ? [...new Set(release.artifacts.map(artifact => artifact.platform))] : [];
 const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
+const live = release ? release.artifacts.filter(artifact => artifact.best).length : 0;
+const isLatest = release !== null && data.releases[0] === release;
+
+// The visitor's own file first: same system and architecture, else the same system's first live file.
+const device = deviceFromHeaders(Astro.request.headers);
+const mine = release && device
+  ? (release.artifacts.find(artifact => artifact.best && artifact.platform === device.platform && artifact.arch === device.arch)
+    ?? release.artifacts.find(artifact => artifact.best && artifact.platform === device.platform) ?? null)
+  : null;
+// "Verify it yourself" opens on the visitor's system when the release has it.
+const openVerify = device && platforms.includes(device.platform) ? device.platform : platforms[0];
 ---
 
 <Base
@@ -38,15 +49,34 @@ const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
     ) : (
       <>
         <nav class="crumbs" aria-label="Breadcrumb"><a href="/versions">Versions</a><span aria-hidden="true">/</span><span>{release.version}</span></nav>
-        <PageHead
-          eyebrow="Spotify for desktop"
-          title={release.version}
-          lead={`Build ${release.fullVersion}${release.date ? `, first listed ${formatDate(release.date)}` : ''}.`}
-        />
-        <p class="badges">
-          {release.signed && <span class="rw-badge rw-badge--ok"><Icon name="shield" size={13} />Signed build verified</span>}
-          {platforms.map(platform => <span class="rw-badge"><PlatformLabel platform={platform} /></span>)}
-        </p>
+        <header class="rhead">
+          <div class="rhead__copy">
+            <p class="rhead__eyebrow"><Icon name="history" size={16} />Spotify for desktop</p>
+            <h1 class="rhead__title vt-release-title">{release.version}</h1>
+            <p class="rhead__lead">Build <span class="mono">{release.fullVersion}</span>{release.date ? `, first listed ${formatDate(release.date)}` : ''}.</p>
+            <p class="badges">
+              {isLatest && <span class="rw-badge rw-badge--accent">Latest</span>}
+              {release.signed && <span class="rw-badge rw-badge--ok"><Icon name="shield" size={13} />Signed build verified</span>}
+              {platforms.map(platform => <span class="rw-badge"><PlatformLabel platform={platform} /></span>)}
+            </p>
+          </div>
+          {mine && (
+            <aside class="rw-card rhead__mine" aria-label="For your system">
+              <p class="rhead__mine-label">For your system</p>
+              <p class="rhead__mine-name"><PlatformLabel platform={mine.platform} arch={mine.arch} /></p>
+              <p class="rhead__mine-meta">{FORMAT_LABELS[mine.format]} · {formatBytes(mine.size)}</p>
+              <DownloadButton artifact={mine} version={release.version} size="lg" block label={`Download for ${PLATFORM_LABELS[mine.platform]}`} />
+              <VerificationBadge verification={mine.verification} />
+            </aside>
+          )}
+        </header>
+
+        <dl class="rw-card facts">
+          <div><dt>Released</dt><dd>{formatDate(release.date)}</dd></div>
+          <div><dt>Files</dt><dd>{release.artifacts.length}</dd></div>
+          <div><dt>Checked by the archive</dt><dd>{checked.length} <small>of {release.artifacts.length}</small></dd></div>
+          <div><dt>Live links</dt><dd>{live} <small>of {release.artifacts.length}</small></dd></div>
+        </dl>
 
         {checked.length === 0 && (
           <Callout title="Listed, not yet checked by the archive" role="note">
@@ -58,17 +88,20 @@ const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
 
         <div class="section-head"><h2>Files</h2></div>
         <div class="rw-table-wrap">
-          <table class="rw-table rw-table--stack">
+          <table class="rw-table rw-table--stack files">
             <thead><tr><th>Platform</th><th>File</th><th class="is-num">Size</th><th>SHA-256</th><th>Checked</th><th class="is-actions"><span class="sr-only">Download</span></th></tr></thead>
             <tbody>
               {release.artifacts.map(artifact => (
                 <tr>
-                  <td data-label="Platform"><PlatformLabel platform={artifact.platform} arch={artifact.arch} /></td>
-                  <td data-label="File">{FORMAT_LABELS[artifact.format]}<small>{formatDate(artifact.date)}</small></td>
-                  <td data-label="Size" class="is-num">{formatBytes(artifact.size)}</td>
-                  <td data-label="SHA-256">{artifact.sha256 ? <CopyField value={artifact.sha256} display={shortHash(artifact.sha256)} /> : <span class="quiet">not captured</span>}</td>
-                  <td data-label="Checked"><VerificationBadge verification={artifact.verification} /></td>
-                  <td class="is-actions"><DownloadButton artifact={artifact} version={release.version} /></td>
+                  <td data-label="Platform" class="c-platform"><PlatformLabel platform={artifact.platform} arch={artifact.arch} /></td>
+                  <td data-label="File" class="c-file">{FORMAT_LABELS[artifact.format]}<small>{formatDate(artifact.date)}</small></td>
+                  <td data-label="Size" class="is-num c-size">{formatBytes(artifact.size)}</td>
+                  <td data-label="SHA-256" class="c-sha">
+                    <span class="files__key">SHA-256</span>
+                    {artifact.sha256 ? <CopyField value={artifact.sha256} display={shortHash(artifact.sha256)} /> : <span class="quiet">not captured</span>}
+                  </td>
+                  <td data-label="Checked" class="c-checked"><VerificationBadge verification={artifact.verification} /></td>
+                  <td class="is-actions c-dl"><DownloadButton artifact={artifact} version={release.version} /></td>
                 </tr>
               ))}
             </tbody>
@@ -86,7 +119,7 @@ const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
         <div class="section-head"><h2>Verify it yourself</h2><a href="/about#verify">Why these commands</a></div>
         <div class="verify">
           {platforms.includes('windows') && (
-            <Disclosure title="Windows" icon="windows" name="verify" open={platforms[0] === 'windows'}>
+            <Disclosure title="Windows" icon="windows" name="verify" open={openVerify === 'windows'}>
               <p>In PowerShell, next to the downloaded installer. The status must be <strong>Valid</strong> and the signer <strong>CN=Spotify AB</strong>, serialNumber 556703-7485.</p>
               <CopyField value="Get-AuthenticodeSignature .\SpotifyFullSetupX64.exe | Format-List Status, SignerCertificate, TimeStamperCertificate" />
               <p>The file’s SHA-256, to compare with the table:</p>
@@ -94,7 +127,7 @@ const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
             </Disclosure>
           )}
           {platforms.includes('macos') && (
-            <Disclosure title="macOS" icon="apple" name="verify">
+            <Disclosure title="macOS" icon="apple" name="verify" open={openVerify === 'macos'}>
               <p>On the app inside the image or the update archive. The team must be <strong>2FNC3A47ZF</strong> and Gatekeeper must say <strong>Notarized Developer ID</strong>.</p>
               <CopyField value="codesign --verify --deep --strict --verbose=2 /Applications/Spotify.app && codesign -dvvv /Applications/Spotify.app 2>&1 | grep TeamIdentifier" />
               <CopyField value="spctl --assess --type execute --verbose=4 /Applications/Spotify.app" />
@@ -102,7 +135,7 @@ const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
             </Disclosure>
           )}
           {platforms.includes('linux') && (
-            <Disclosure title="Linux" icon="linux" name="verify">
+            <Disclosure title="Linux" icon="linux" name="verify" open={openVerify === 'linux'}>
               <p>Spotify’s apt index is signed with key E1096BCB…5384CE82BA52C83A; the .deb’s SHA-256 is the one that index lists.</p>
               <CopyField value="curl -sO https://repository.spotify.com/dists/stable/InRelease && gpgv --keyring ./spotify.gpg InRelease" />
               <CopyField value="sha256sum spotify-client_*_amd64.deb" />
@@ -111,8 +144,18 @@ const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
         </div>
 
         <nav class="pager" aria-label="Other releases">
-          {around.newer ? <a class="rw-btn rw-btn--plain" href={`/v/${around.newer.product}/${around.newer.version}`}>← Newer: <span class="mono">{around.newer.version}</span></a> : <span />}
-          {around.older && <a class="rw-btn rw-btn--plain" href={`/v/${around.older.product}/${around.older.version}`}>Older: <span class="mono">{around.older.version}</span> →</a>}
+          {around.newer ? (
+            <a class="rw-card rw-card--interactive pager__link" href={`/v/${around.newer.product}/${around.newer.version}`} rel="prev">
+              <Icon name="arrowLeft" size={18} />
+              <span><small>Newer</small><span class="mono">{around.newer.version}</span><small>{formatDate(around.newer.date)}</small></span>
+            </a>
+          ) : <span />}
+          {around.older && (
+            <a class="rw-card rw-card--interactive pager__link pager__link--older" href={`/v/${around.older.product}/${around.older.version}`} rel="next">
+              <span><small>Older</small><span class="mono">{around.older.version}</span><small>{formatDate(around.older.date)}</small></span>
+              <Icon name="arrowRight" size={18} />
+            </a>
+          )}
         </nav>
       </>
     )
@@ -134,15 +177,175 @@ const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
   .crumbs a:hover {
     color: var(--accent);
   }
+  .rhead {
+    display: grid;
+    gap: 1.4rem;
+    align-items: end;
+    margin-bottom: 1.2rem;
+  }
+  @media (min-width: 860px) {
+    .rhead {
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+    }
+  }
+  .rhead__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.6rem;
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .rhead__title {
+    width: fit-content;
+    margin: 0;
+    font-size: clamp(2.4rem, 1.4rem + 4vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.045em;
+    font-variant-numeric: tabular-nums;
+  }
+  .rhead__lead {
+    margin: 0.7rem 0 0;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
   .badges {
     display: flex;
     flex-wrap: wrap;
     gap: 0.45rem;
-    margin: 0.9rem 0 1.4rem;
+    margin: 1rem 0 0;
+  }
+  .rhead__mine {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: start;
+    padding: 1.1rem 1.2rem;
+    background: linear-gradient(160deg, var(--accent-soft), transparent 75%), var(--panel);
+  }
+  .rhead__mine p {
+    margin: 0;
+  }
+  .rhead__mine-label {
+    color: var(--ink-3);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .rhead__mine-name {
+    font-size: 1.05rem;
+    font-weight: 650;
+  }
+  .rhead__mine-meta {
+    margin-top: -0.3rem !important;
+    color: var(--ink-3);
+    font-size: 0.86rem;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(50%, 10rem), 1fr));
+    margin: 0 0 1rem;
+    padding: 0;
+    overflow: hidden;
+  }
+  .facts > div {
+    padding: 0.85rem 1.1rem;
+    border-right: 1px solid var(--hair-soft);
+    margin-right: -1px;
+  }
+  .facts dt {
+    color: var(--ink-3);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .facts dd {
+    margin: 0.3rem 0 0;
+    font-size: 1.15rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+  .facts dd small {
+    color: var(--ink-3);
+    font-size: 0.8em;
+    font-weight: 500;
   }
   td small {
     display: block;
     color: var(--ink-3);
+  }
+  .files__key {
+    display: none;
+  }
+  /* A narrow table: one compact block per file instead of the kit's label-per-line stack. */
+  @container rw-table (width < 40rem) {
+    .files.rw-table--stack tbody > tr {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'platform checked'
+        'file size'
+        'sha sha'
+        'dl dl';
+      gap: 0.35rem 0.8rem;
+      padding: 0.9rem 1rem;
+    }
+    .files.rw-table--stack tbody > tr > * {
+      display: block;
+      justify-items: start;
+      text-align: start;
+    }
+    .files.rw-table--stack tbody > tr > *::before {
+      content: none;
+    }
+    .files.rw-table--stack .c-platform {
+      grid-area: platform;
+      font-weight: 600;
+    }
+    .files.rw-table--stack .c-checked {
+      grid-area: checked;
+      justify-self: end;
+    }
+    .files.rw-table--stack .c-file {
+      grid-area: file;
+      color: var(--ink-2);
+      font-size: 0.88rem;
+    }
+    .files.rw-table--stack .c-file small {
+      display: inline;
+      margin-left: 0.4rem;
+    }
+    .files.rw-table--stack .c-size {
+      grid-area: size;
+      justify-self: end;
+      color: var(--ink-2);
+      font-size: 0.88rem;
+    }
+    .files.rw-table--stack tbody > tr > .c-sha {
+      display: flex;
+      grid-area: sha;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.88rem;
+    }
+    .files.rw-table--stack .c-sha :global(.rw-copy) {
+      flex: 1;
+    }
+    .files__key {
+      display: inline;
+      color: var(--ink-3);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .files.rw-table--stack tbody > tr > .c-dl {
+      display: flex;
+      grid-area: dl;
+      padding-top: 0.3rem;
+    }
   }
   .quiet {
     color: var(--ink-3);
@@ -175,10 +378,39 @@ const permanent = (id: string) => new URL(`/dl/${id}`, Astro.site).href;
     margin-bottom: 0.5rem;
   }
   .pager {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
     margin-top: 2.5rem;
+  }
+  .pager__link {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 1.1rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .pager__link > span {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+  .pager__link--older {
+    justify-content: flex-end;
+    text-align: right;
+  }
+  .pager__link .mono {
+    font-weight: 650;
+  }
+  .pager__link small {
+    color: var(--ink-3);
+    font-size: 0.8rem;
+  }
+  .pager__link :global(svg) {
+    flex: none;
+    color: var(--ink-3);
   }
   .sr-only {
     position: absolute;

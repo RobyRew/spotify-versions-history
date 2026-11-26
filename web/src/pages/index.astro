@@ -4,86 +4,171 @@ import Icon from '@robyrew/ui/components/Icon.astro';
 import StatusDot from '@robyrew/ui/components/StatusDot.astro';
 import Base from '../layouts/Base.astro';
 import DownloadButton from '../components/DownloadButton.astro';
+import PlatformCard from '../components/PlatformCard.astro';
 import PlatformLabel from '../components/PlatformLabel.astro';
-import ReleaseRows from '../components/ReleaseRows.astro';
-import VerificationBadge from '../components/VerificationBadge.astro';
-import { latestDownloads, FORMAT_LABELS } from '../../../lib/site/model.ts';
+import ReleaseItems from '../components/ReleaseItems.astro';
+import { ARCH_LABELS, latestDownloads, PLATFORM_LABELS, releaseJson, type Platform } from '../../../lib/site/model.ts';
 import { siteData } from '../lib/data.ts';
+import { deviceFromHeaders } from '../lib/device.ts';
 import { formatBytes, formatDate, formatDateTime } from '../lib/format.ts';
 
 const data = await siteData();
 const latest = latestDownloads(data.releases);
+const newest = data.releases[0] ?? null;
+const oldest = data.releases.at(-1) ?? null;
 const recent = data.releases.slice(0, 8);
+const device = deviceFromHeaders(Astro.request.headers);
 
-// The visitor's system from the User-Agent, to mark its card; nothing is stored.
-const agent = Astro.request.headers.get('user-agent') ?? '';
-const device = /Windows/.test(agent) ? 'windows' : /Macintosh|Mac OS X/.test(agent) && !/iPhone|iPad/.test(agent) ? 'macos' : /Linux/.test(agent) && !/Android/.test(agent) ? 'linux' : null;
+const DESKTOP: readonly Platform[] = ['windows', 'macos', 'linux'];
+const cards = DESKTOP.map(platform => ({
+  platform,
+  entries: latest.filter(entry => entry.platform === platform),
+  releases: data.releases.filter(release => release.platforms.includes(platform)).length,
+})).filter(card => card.entries.length > 0);
+
+// The hero's download: the visitor's system and architecture, else that system's first build.
+const mine = device ? (latest.find(entry => entry.platform === device.platform && entry.arch === device.arch) ?? latest.find(entry => entry.platform === device.platform) ?? null) : null;
 
 const verified = data.verification?.artifacts ?? [];
 const signed = verified.filter(artifact => artifact.ok && artifact.level === 'signed').length;
 const notOk = verified.filter(artifact => !artifact.ok).length;
 const summary = data.health?.summary;
-const spotifyLinks = summary ? (['spotify-current', 'spotify-apt', 'snap'] as const).reduce((count, provider) => count + summary[provider].ok, 0) : null;
-const mirrorChecked = summary ? Object.entries(summary.loadspot).filter(([status]) => status !== 'not-checked').reduce((count, [, value]) => count + value, 0) : 0;
-const mirrorOk = summary?.loadspot.ok ?? 0;
+const tally = (providers: readonly (keyof NonNullable<typeof summary>)[]) => {
+  let ok = 0;
+  let checked = 0;
+  for (const provider of providers) {
+    for (const [status, count] of Object.entries(summary?.[provider] ?? {})) {
+      if (status === 'not-checked') continue;
+      checked += count;
+      if (status === 'ok') ok += count;
+    }
+  }
+  return { ok, checked };
+};
+const links = summary ? tally(['spotify-current', 'spotify-signed', 'spotify-apt', 'snap', 'loadspot']) : null;
+const probedAt = data.health?.generatedAt ?? data.verification?.generatedAt ?? null;
 
 const mobile = data.mobile as { ios?: { version?: string; releaseDate?: string; listing?: string }; windowsStore?: { lastUpdate?: string; listing?: string } } | null;
 const stores = [
   { name: 'iPhone and iPad', icon: 'apple' as const, store: 'App Store', version: mobile?.ios?.version ?? null, date: mobile?.ios?.releaseDate ?? null, href: mobile?.ios?.listing ?? 'https://apps.apple.com/app/id324684580' },
   { name: 'Android', icon: 'android' as const, store: 'Google Play', version: null, date: null, href: 'https://play.google.com/store/apps/details?id=com.spotify.music' },
-  { name: 'Microsoft Store', icon: 'store' as const, store: 'Microsoft Store', version: null, date: mobile?.windowsStore?.lastUpdate ?? null, href: mobile?.windowsStore?.listing ?? 'https://apps.microsoft.com/detail/9ncbcszsjrsb' },
 ];
+const msStore = { date: mobile?.windowsStore?.lastUpdate ?? null, href: mobile?.windowsStore?.listing ?? 'https://apps.microsoft.com/detail/9ncbcszsjrsb' };
+
+// The API teaser shows part of the real answer for Windows x64.
+const sample = latest.find(entry => entry.platform === 'windows' && entry.arch === 'x64') ?? latest[0] ?? null;
+const sampleArtifact = sample ? releaseJson(sample.release).artifacts.find(item => item.id === sample.artifact.id) : null;
+const sampleJson = sample && sampleArtifact
+  ? JSON.stringify({ platform: sample.platform, arch: sample.arch, version: sample.release.version, date: sample.release.date, artifact: { format: sampleArtifact.format, size: sampleArtifact.size, sha256: sampleArtifact.sha256, download: sampleArtifact.download ? { label: sampleArtifact.download.label, kind: sampleArtifact.download.kind } : null } }, null, 2)
+  : null;
+const samplePath = sample ? `/api/v2/latest/${sample.platform}/${sample.arch}` : '/api/v2/latest';
 ---
 
 <Base section="home">
-  <section class="hero reveal">
-    <p class="hero__eyebrow"><Icon name="shield" size={15} /> Official builds only</p>
-    <h1 class="hero__title">Every official Spotify build, in one place.</h1>
-    <p class="hero__lead">
-      The archive follows the channels Spotify ships through — its own CDN, its apt repository, the Snap Store and the
-      Microsoft Store — and keeps every build it sees. The builds it captures are checked against their publisher’s
-      signature on Linux, macOS and Windows; every file says whether it has been.
-    </p>
-    <div class="rw-actions">
-      <a class="rw-btn rw-btn--primary" href="/versions"><Icon name="history" size={17} />Browse {data.releases.length} versions</a>
-      <a class="rw-btn" href="/about">How the checks work</a>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero__copy">
+      <p class="pill" data-hero><Icon name="shield" size={14} /> Official, unmodified builds only</p>
+      <h1 id="hero-title" class="hero__title" data-hero>Every official Spotify build, <span class="hero__accent">in one place.</span></h1>
+      <p class="hero__lead" data-hero>
+        Spotify’s own installers for Windows, macOS and Linux, followed across its CDN, its apt repository, the Snap
+        Store and the Microsoft Store. Every build the archive sees is kept, and every file says whether its signature
+        has been checked.
+      </p>
+      <div class="hero__ctas" data-hero>
+        {
+          mine && (
+            <DownloadButton
+              artifact={mine.artifact}
+              version={mine.release.version}
+              size="lg"
+              label={`Download for ${PLATFORM_LABELS[mine.platform]}`}
+            />
+          )
+        }
+        <a class:list={['rw-btn', 'rw-btn--lg', { 'rw-btn--primary': !mine }]} href="/versions">
+          <Icon name="history" size={18} />Browse {data.releases.length} versions
+        </a>
+      </div>
+      {
+        mine && (
+          <p class="hero__for" data-hero>
+            <span class="mono">{mine.release.version}</span> · {ARCH_LABELS[mine.arch]} · {formatBytes(mine.artifact.size)}.
+            Not your system? <a href="#latest">Every platform</a>
+          </p>
+        )
+      }
+      <ul class="hero__trust" data-hero>
+        <li><Icon name="shield" size={16} /> Current builds checked daily</li>
+        <li><Icon name="lock" size={16} /> Publisher identities pinned</li>
+        <li><Icon name="braces" size={16} /> Open JSON API</li>
+      </ul>
     </div>
+
+    <aside class="rw-card now" aria-label="The archive now" data-hero-panel>
+      {
+        newest && (
+          <div class="now__newest">
+            <p class="now__label">Newest build</p>
+            <a class="now__version mono" href={`/v/${newest.product}/${newest.version}`} data-vt-release={`/v/${newest.product}/${newest.version}`}>{newest.version}</a>
+            <p class="now__meta">
+              {formatDate(newest.date)}
+              <span class="now__platforms">{newest.platforms.map(platform => <PlatformLabel platform={platform} compact />)}</span>
+            </p>
+          </div>
+        )
+      }
+      <dl class="now__stats">
+        <div>
+          <dt>Versions archived</dt>
+          <dd><span data-count={data.releases.length}>{data.releases.length}</span></dd>
+          {oldest && <dd class="now__sub">back to <span class="mono">{oldest.version}</span></dd>}
+        </div>
+        <div>
+          <dt>Current builds signed</dt>
+          <dd>{data.verification ? <><span data-count={signed}>{signed}</span><small>/{verified.length}</small></> : '—'}</dd>
+          <dd class="now__sub">{data.verification ? 'on Linux, macOS and Windows' : 'no report yet'}</dd>
+        </div>
+        <div>
+          <dt>Links answering</dt>
+          <dd>{links ? <><span data-count={links.ok}>{links.ok}</span><small>/{links.checked}</small></> : '—'}</dd>
+          <dd class="now__sub">{links ? 'Spotify, stores and mirror' : 'no check yet'}</dd>
+        </div>
+      </dl>
+      <a class="now__foot" href="/probes">
+        <StatusDot status={!data.verification && !summary ? 'unknown' : notOk ? 'danger' : 'ok'} hideLabel pulse={Boolean(data.verification) && !notOk} />
+        <span>{probedAt ? `Probes ran ${formatDateTime(probedAt)}` : 'The probes have not reported yet'}</span>
+        <Icon name="arrowRight" size={15} />
+      </a>
+    </aside>
   </section>
 
-  <div class="section-head"><h2>Latest for each platform</h2><a href="/versions">All versions</a></div>
-  <div class="latest-grid">
+  <div class="section-head" id="latest"><h2>Latest for each platform</h2><a href="/versions">All versions</a></div>
+  <div class="cards">
     {
-      latest.map(({ platform, arch, release, artifact, newer }) => (
-        <article class:list={['rw-card', 'latest reveal', { 'latest--device': device === platform }]}>
-          <header class="latest__head">
-            <PlatformLabel platform={platform} arch={arch} />
-            {device === platform && <span class="rw-badge rw-badge--accent">This device</span>}
-          </header>
-          <p class="latest__version">
-            <a href={`/v/${release.product}/${release.version}`} class="mono">{release.version}</a>
-          </p>
-          <p class="latest__meta">
-            {formatDate(artifact.date ?? release.date)} · {FORMAT_LABELS[artifact.format]} · {formatBytes(artifact.size)}
-          </p>
-          {newer && (
-            <p class="latest__newer">
-              Newer on the mirror: <a href={`/v/${newer.release.product}/${newer.release.version}`} class="mono">{newer.release.version}</a>
-            </p>
+      cards.map(card => (
+        <PlatformCard platform={card.platform} entries={card.entries} device={device} releases={card.releases}>
+          {card.platform === 'windows' && (
+            <a slot="extra" class="pstore" href={msStore.href} rel="noopener">
+              <span class="pstore__mark" aria-hidden="true"><Icon name="store" size={18} /></span>
+              <span class="pstore__text">
+                <strong>Also in the Microsoft Store</strong>
+                <span>{msStore.date ? `Updated ${formatDate(msStore.date)} · ` : ''}the Store’s own packages are checked daily</span>
+              </span>
+              <Icon name="external" size={15} />
+            </a>
           )}
-          <div class="latest__foot">
-            <VerificationBadge verification={artifact.verification} />
-            <DownloadButton artifact={artifact} version={release.version} size="md" />
-          </div>
-        </article>
+        </PlatformCard>
       ))
     }
   </div>
 
+  <div class="section-head"><h2>Phones and tablets</h2></div>
+  <p class="section-note">These builds install only through their store, so the archive records their versions and links to the listing.</p>
   <div class="stores">
     {
       stores.map(store => (
         <a class="rw-card rw-card--interactive store reveal" href={store.href} rel="noopener">
-          <Icon name={store.icon} size={20} />
+          <span class="store__mark" aria-hidden="true"><Icon name={store.icon} size={20} /></span>
           <span class="store__text">
             <strong>{store.name}</strong>
             <span>{store.store}{store.version ? ` · ${store.version}` : ''}{store.date ? ` · ${formatDate(store.date)}` : ''}</span>
@@ -95,146 +180,308 @@ const stores = [
   </div>
 
   <div class="section-head"><h2>Recent releases</h2><a href="/versions">All {data.releases.length}</a></div>
-  <div class="rw-table-wrap">
-    <table class="rw-table rw-table--stack">
-      <thead><tr><th>Version</th><th>Released</th><th>Platforms</th><th>Checked</th><th class="is-num">Live links</th></tr></thead>
-      <tbody><ReleaseRows releases={recent} /></tbody>
-    </table>
-  </div>
-
-  <div class="section-head"><h2>What the probes see now</h2><a href="/probes">All probes</a></div>
-  <div class="probe-strip">
-    <a class="rw-card rw-card--interactive probe" href="/probes#verification">
-      <StatusDot status={data.verification ? (notOk ? 'danger' : 'ok') : 'unknown'} hideLabel />
-      <span><strong>{data.verification ? `${signed} of ${verified.length} current builds signed` : 'No verification report yet'}</strong>
-        <small>{data.verification ? `checked ${formatDateTime(data.verification.generatedAt)}` : 'the daily run publishes one'}</small></span>
-    </a>
-    <a class="rw-card rw-card--interactive probe" href="/probes#links">
-      <StatusDot status={summary ? 'ok' : 'unknown'} hideLabel />
-      <span><strong>{summary ? `${spotifyLinks} Spotify and store links answer` : 'No link check yet'}</strong>
-        <small>{summary ? `${mirrorOk} of ${mirrorChecked} mirror links checked this week answer` : 'the six-hourly run publishes one'}</small></span>
-    </a>
-  </div>
+  <ol class="rw-card rl-list reveal" aria-label="Recent releases">
+    <ReleaseItems releases={recent} latest={newest?.version} />
+  </ol>
 
   <div class="section-head"><h2>How a build is checked</h2><a href="/about">The details</a></div>
-  <div class="how">
-    <article class="rw-card how__item reveal">
-      <Icon name="shield" size={20} />
+  <ol class="how">
+    <li class="rw-card how__item reveal">
+      <span class="how__step" aria-hidden="true">1</span>
+      <span class="how__mark" aria-hidden="true"><Icon name="shield" size={20} /></span>
       <h3>Its own signature</h3>
       <p>Authenticode for Windows, codesign and notarization for macOS, the signed apt index for Debian, Canonical’s assertions for snaps, Microsoft’s package signature for the Store.</p>
-    </article>
-    <article class="rw-card how__item reveal">
-      <Icon name="layers" size={20} />
+    </li>
+    <li class="rw-card how__item reveal">
+      <span class="how__step" aria-hidden="true">2</span>
+      <span class="how__mark" aria-hidden="true"><Icon name="layers" size={20} /></span>
       <h3>Two implementations</h3>
       <p>Every signature is checked in code this archive owns and again with the platform’s own tools on Linux, macOS and Windows; the hosts must agree on every byte.</p>
-    </article>
-    <article class="rw-card how__item reveal">
-      <Icon name="lock" size={20} />
+    </li>
+    <li class="rw-card how__item reveal">
+      <span class="how__step" aria-hidden="true">3</span>
+      <span class="how__mark" aria-hidden="true"><Icon name="lock" size={20} /></span>
       <h3>Pinned identities</h3>
       <p>Spotify’s signer, Apple team, apt key and Store publisher are written down with where they were read from. A changed identity fails until someone reviews it.</p>
-    </article>
-  </div>
+    </li>
+  </ol>
 
   <div class="section-head"><h2>Use it from code</h2><a href="/api">API reference</a></div>
-  <div class="rw-card api-teaser">
-    <p>The same data is JSON for your scripts. The newest Windows x64 build, for instance:</p>
-    <CopyField value={`curl ${new URL('/api/v2/latest/windows/x64', Astro.site).href}`} />
+  <div class="rw-card api reveal">
+    <div class="api__copy">
+      <p>The same data is JSON for your scripts, with an ETag on every answer. The newest {sample ? `${PLATFORM_LABELS[sample.platform]} ${ARCH_LABELS[sample.arch]}` : ''} build, for instance:</p>
+      <CopyField value={`curl ${new URL(samplePath, Astro.site).href}`} truncate />
+    </div>
+    {
+      sampleJson && (
+        <figure class="api__sample">
+          <figcaption>Part of the answer</figcaption>
+          <pre class="mono">{sampleJson}</pre>
+        </figure>
+      )
+    }
   </div>
 </Base>
 
 <script>
-  import { reveal } from '../scripts/motion.ts';
-  reveal('.reveal');
+  import { countUp, heroIn, revealOnScroll } from '../scripts/motion.ts';
+  heroIn();
+  countUp('[data-count]');
+  revealOnScroll('.reveal');
 </script>
 
 <style>
   .hero {
-    padding: clamp(1.5rem, 5vw, 3.5rem) 0 0.5rem;
-    max-width: 50rem;
-  }
-  .hero__eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin: 0 0 0.8rem;
-    color: var(--accent);
-    font-weight: 600;
-    font-size: 0.9rem;
-  }
-  .hero__title {
-    margin: 0 0 1rem;
-    font-size: clamp(2rem, 1.2rem + 3.2vw, 3.4rem);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    font-weight: 750;
-  }
-  .hero__lead {
-    margin: 0 0 1.5rem;
-    color: var(--ink-2);
-    font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
-    line-height: 1.55;
-  }
-  .latest-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
-    gap: 0.9rem;
+    gap: 2rem;
+    align-items: center;
+    padding: clamp(1.25rem, 4vw, 3.25rem) 0 0.5rem;
   }
-  .latest {
+  @media (min-width: 960px) {
+    .hero {
+      grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 1fr);
+      gap: 3rem;
+    }
+  }
+  .hero__copy {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 1rem 1.1rem 1.1rem;
+    align-items: flex-start;
+    gap: 1.1rem;
   }
-  .latest--device {
-    outline: 1.5px solid color-mix(in oklab, var(--accent) 55%, transparent);
-  }
-  .latest__head {
-    display: flex;
+  .pill {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    font-weight: 600;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0.34rem 0.8rem;
+    border: 1px solid var(--hair);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--ink-2);
+    font-size: 0.8rem;
+    font-weight: 650;
   }
-  .latest__version {
-    margin: 0.4rem 0 0;
-    font-size: 1.45rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-  .latest__version a {
-    color: var(--ink);
-    text-decoration: none;
-  }
-  .latest__version a:hover {
+  .pill :global(svg) {
     color: var(--accent);
   }
-  .latest__meta {
+  .hero__title {
     margin: 0;
+    max-width: 15ch;
+    font-size: clamp(2.3rem, 1.2rem + 4.2vw, 4rem);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+  .hero__accent {
+    color: var(--accent);
+  }
+  .hero__lead {
+    max-width: 36rem;
+    margin: 0;
+    color: var(--ink-2);
+    font-size: clamp(1.02rem, 0.9vw + 0.8rem, 1.15rem);
+    line-height: 1.6;
+  }
+  .hero__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.3rem;
+  }
+  .hero__for {
+    margin: -0.4rem 0 0;
     color: var(--ink-3);
     font-size: 0.86rem;
   }
-  .latest__newer {
-    margin: 0.15rem 0 0;
-    color: var(--ink-3);
-    font-size: 0.84rem;
-  }
-  .latest__newer a {
+  .hero__for a {
     color: var(--ink-2);
   }
-  .latest__foot {
+  .hero__trust {
     display: flex;
     flex-wrap: wrap;
+    gap: 0.5rem 1.2rem;
+    margin: 0.2rem 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ink-3);
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+  .hero__trust li {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.4rem;
+  }
+  .hero__trust :global(svg) {
+    color: var(--accent);
+  }
+
+  .now {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  .now__newest {
+    padding: 1.2rem 1.3rem 1rem;
+    background: linear-gradient(160deg, var(--accent-soft), transparent 70%);
+  }
+  .now__label,
+  .now__stats dt {
+    margin: 0;
+    color: var(--ink-3);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .now__version {
+    display: inline-block;
+    margin-top: 0.3rem;
+    color: var(--ink);
+    font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    text-decoration: none;
+  }
+  .now__version:hover {
+    color: var(--accent);
+  }
+  .now__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0.2rem 0 0;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+  }
+  .now__platforms {
+    display: inline-flex;
+    gap: 0.45rem;
+  }
+  .now__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    border-top: 1px solid var(--hair-soft);
+  }
+  .now__stats > div {
+    padding: 1rem 1.3rem;
+  }
+  .now__stats > div + div {
+    border-left: 1px solid var(--hair-soft);
+  }
+  .now__stats dd {
+    margin: 0.35rem 0 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .now__stats dd small {
+    color: var(--ink-3);
+    font-size: 0.6em;
+    font-weight: 600;
+  }
+  .now__stats .now__sub {
+    margin-top: 0.15rem;
+    color: var(--ink-3);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+  @media (max-width: 479px) {
+    .now__stats > div {
+      padding: 0.85rem 0.9rem;
+    }
+    .now__stats dd {
+      font-size: 1.3rem;
+    }
+    .now__stats .now__sub {
+      display: none;
+    }
+  }
+  .now__foot {
+    display: flex;
+    align-items: center;
     gap: 0.6rem;
     margin-top: auto;
-    padding-top: 0.8rem;
+    padding: 0.8rem 1.3rem;
+    border-top: 1px solid var(--hair-soft);
+    color: var(--ink-2);
+    font-size: 0.86rem;
+    text-decoration: none;
+  }
+  .now__foot span {
+    flex: 1;
+  }
+  .now__foot:hover {
+    color: var(--accent);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+    gap: 0.9rem;
+  }
+  /* With all three systems: Windows (three builds) runs down the left, macOS and Linux stack on the right. */
+  @media (min-width: 900px) {
+    .cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cards > :global(#windows:first-child:nth-last-child(3)) {
+      grid-row: span 2;
+    }
+  }
+  .pstore {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: auto 1.1rem 0.9rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px dashed var(--hair);
+    border-radius: var(--rw-r-ctl);
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color 0.15s, background-color 0.15s;
+  }
+  .pstore + :global(.pcard__all) {
+    margin-top: 0;
+  }
+  .pstore:hover {
+    border-color: color-mix(in oklab, var(--accent) 50%, var(--hair));
+    background: var(--rw-fill);
+  }
+  .pstore__mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    background: var(--rw-fill);
+  }
+  .pstore__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    font-size: 0.9rem;
+  }
+  .pstore__text span {
+    color: var(--ink-3);
+    font-size: 0.8rem;
+  }
+  .section-note {
+    margin: -0.4rem 0 0.9rem;
+    color: var(--ink-3);
+    font-size: 0.9rem;
   }
   .stores {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
     gap: 0.9rem;
-    margin-top: 0.9rem;
   }
   .store {
     display: flex;
@@ -243,6 +490,15 @@ const stores = [
     padding: 0.85rem 1rem;
     color: var(--ink);
     text-decoration: none;
+  }
+  .store__mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.75rem;
+    background: var(--rw-fill);
   }
   .store__text {
     display: flex;
@@ -254,39 +510,40 @@ const stores = [
     color: var(--ink-3);
     font-size: 0.84rem;
   }
-  .probe-strip {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-    gap: 0.9rem;
-  }
-  .probe {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    padding: 0.9rem 1.1rem;
-    color: var(--ink);
-    text-decoration: none;
-  }
-  .probe span {
-    display: flex;
-    flex-direction: column;
-  }
-  .probe small {
-    color: var(--ink-3);
-  }
+
   .how {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
     gap: 0.9rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   .how__item {
-    padding: 1.1rem 1.2rem;
+    position: relative;
+    padding: 1.2rem 1.3rem;
   }
-  .how__item :global(svg) {
+  .how__step {
+    position: absolute;
+    top: 1rem;
+    right: 1.2rem;
+    color: var(--ink-3);
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    opacity: 0.35;
+  }
+  .how__mark {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.75rem;
+    background: var(--accent-soft);
     color: var(--accent);
   }
   .how__item h3 {
-    margin: 0.6rem 0 0.35rem;
+    margin: 0.8rem 0 0.35rem;
     font-size: 1rem;
   }
   .how__item p {
@@ -295,13 +552,48 @@ const stores = [
     font-size: 0.92rem;
     line-height: 1.5;
   }
-  .api-teaser {
+
+  .api {
     display: grid;
-    gap: 0.7rem;
-    padding: 1.1rem 1.2rem;
+    gap: 1.2rem;
+    padding: 1.2rem 1.3rem;
   }
-  .api-teaser p {
+  @media (min-width: 900px) {
+    .api {
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      align-items: start;
+    }
+  }
+  .api__copy {
+    display: grid;
+    gap: 0.8rem;
+  }
+  .api__copy p {
     margin: 0;
     color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .api__sample {
+    margin: 0;
+    min-width: 0;
+  }
+  .api__sample figcaption {
+    margin-bottom: 0.4rem;
+    color: var(--ink-3);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .api__sample pre {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    overflow-x: auto;
+    border: 1px solid var(--hair-soft);
+    border-radius: var(--rw-r-ctl);
+    background: var(--ground-2);
+    color: var(--ink-2);
+    font-size: 0.8rem;
+    line-height: 1.55;
   }
 </style>
