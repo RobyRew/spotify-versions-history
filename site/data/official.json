@@ -2,46 +2,46 @@
   "schemaVersion": 1,
   "watched": {
     "windows-x64": {
-      "etag": "\"4da214887881217ff9c210c31b528a34\"",
-      "size": 161310152,
-      "lastModified": "2026-11-18T13:09:13.000Z",
-      "checkedAt": "2026-11-18T13:34:07.825Z",
-      "changedAt": "2026-11-18T13:34:07.825Z"
+      "etag": "\"d6e7c273e57794a92df086fee0f068ba\"",
+      "size": 161498592,
+      "lastModified": "2026-11-27T08:24:38.000Z",
+      "checkedAt": "2026-11-27T08:34:44.245Z",
+      "changedAt": "2026-11-27T08:34:44.245Z"
     },
     "windows-arm64": {
-      "etag": "\"2d2a1d5774194a271ca1b1930945f879\"",
-      "size": 146190552,
-      "lastModified": "2026-11-18T13:09:05.000Z",
-      "checkedAt": "2026-11-18T13:34:07.825Z",
-      "changedAt": "2026-11-18T13:34:07.825Z"
+      "etag": "\"5ba2937bf7eb4792955b7fb45ec33d1c\"",
+      "size": 146255600,
+      "lastModified": "2026-11-27T08:24:29.000Z",
+      "checkedAt": "2026-11-27T08:34:44.245Z",
+      "changedAt": "2026-11-27T08:34:44.245Z"
     },
     "windows-x86": {
       "etag": "\"a816e28898a9ff39494517a116be708e\"",
       "size": 105290384,
       "lastModified": "2026-02-22T18:28:34.000Z",
-      "checkedAt": "2026-11-18T13:34:07.825Z",
+      "checkedAt": "2026-11-27T08:34:44.245Z",
       "changedAt": "2026-09-18T04:29:31.949Z"
     },
     "windows-online": {
-      "etag": "\"4043213af48064ff7ee6255f4c276118\"",
-      "size": 1044456,
-      "lastModified": "2026-11-18T13:09:05.000Z",
-      "checkedAt": "2026-11-18T13:34:07.825Z",
-      "changedAt": "2026-11-18T13:34:07.825Z"
+      "etag": "\"e379d0e64a34cb84e7d6eaf7af1246ee\"",
+      "size": 1037800,
+      "lastModified": "2026-11-27T08:24:29.000Z",
+      "checkedAt": "2026-11-27T08:34:44.245Z",
+      "changedAt": "2026-11-27T08:34:44.245Z"
     },
     "macos-x64": {
-      "etag": "\"bdddf33974153fc4af5f9d68120b748d\"",
-      "size": 197253600,
-      "lastModified": "2026-11-18T13:09:10.000Z",
-      "checkedAt": "2026-11-18T13:34:07.825Z",
-      "changedAt": "2026-11-18T13:34:07.825Z"
+      "etag": "\"f4836969c39bf66b1a41ebdb621e58b3\"",
+      "size": 197752926,
+      "lastModified": "2026-11-27T08:24:34.000Z",
+      "checkedAt": "2026-11-27T08:34:44.245Z",
+      "changedAt": "2026-11-27T08:34:44.245Z"
     },
     "macos-arm64": {
-      "etag": "\"2b9355e3343d9a13705c47df29b2829c\"",
-      "size": 178848157,
-      "lastModified": "2026-11-18T13:09:18.000Z",
-      "checkedAt": "2026-11-18T13:34:07.825Z",
-      "changedAt": "2026-11-18T13:34:07.825Z"
+      "etag": "\"87237fbc1e48649b41084a47dc7eb696\"",
+      "size": 179337839,
+      "lastModified": "2026-11-27T08:24:43.000Z",
+      "checkedAt": "2026-11-27T08:34:44.245Z",
+      "changedAt": "2026-11-27T08:34:44.245Z"
     }
   },
   "updateService": {
@@ -87,6 +87,36 @@
     }
   },
   "builds": [
+    {
+      "fullVersion": "1.3.11.2657.gab535a3f4acc",
+      "platform": "windows",
+      "architecture": "x64",
+      "sha256": "d3bec6eb33e9216e755783f8a821d90d374172b5f322826110f84dc6614a97f8",
+      "sha1": "bd539659187433c3fa4f22cf00fabb5451bb1465",
+      "size": 161498592,
+      "lastModified": "2026-11-27T08:24:38.000Z",
+      "capturedAt": "2026-11-27T08:34:44.245Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+      "etag": "\"d6e7c273e57794a92df086fee0f068ba\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
+    {
+      "fullVersion": "1.3.11.2657.gab535a3f4acc",
+      "platform": "windows",
+      "architecture": "arm64",
+      "sha256": "b0068613e27b1017c45f5e1d3266e7c81b02de2c977e65231515db32374847e8",
+      "sha1": "ff7a2bf1cfa4a80d29b956670f8d595c33e6af4f",
+      "size": 146255600,
+      "lastModified": "2026-11-27T08:24:29.000Z",
+      "capturedAt": "2026-11-27T08:34:44.245Z",
+      "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+      "etag": "\"5ba2937bf7eb4792955b7fb45ec33d1c\"",
+      "sensors": [
+        "permanent-url"
+      ]
+    },
     {
       "fullVersion": "1.3.10.2586.g81a118a22460",
       "platform": "windows",
