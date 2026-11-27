@@ -6,7 +6,10 @@ name: Verify current builds
 #  - Windows: Get-AuthenticodeSignature and signtool on the installers and the Store packages.
 # The hosts' reports are merged into one verdict per build (sensors/verify/report.ts). A sensor with a
 # build that is not ok keeps one open issue labelled sensor-alert, closed again by the next clean run.
-# Nothing is committed and no build is stored: the run keeps only its reports.
+# With the R2 secrets and the ARCHIVE_FILES_URL variable, the report job keeps a copy of each build
+# that passed at the signed level in the R2 bucket (sensors/archive.ts, within the limits in
+# web/README.md, "Free-tier limits") and commits site/data/archive.json; without them the run keeps
+# only its reports.
 on:
   schedule:
     - cron: '23 4 * * *'

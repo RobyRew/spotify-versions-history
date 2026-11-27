@@ -1,5 +1,6 @@
 name: Ledger and feeds
-# Type check and tests for the ledger v2 package at the repository root (lib/, scripts/, test/).
+# Type check and tests for the code at the repository root (lib/, scripts/, sensors/, test/) and the
+# files Worker's handler (worker/src, which test/worker imports).
 # While site/ still exists, also compares the v1 files generated from the ledger with the v1
 # generator's on the full site/data (scripts/legacy/check-v1-equivalence.mjs).
 # The site job type-checks and builds the archive's website (web/), which imports lib/ and sensors/.
@@ -19,6 +20,7 @@ on:
       - 'site/data/**'
       - 'site/src/lib/catalog.mjs'
       - 'web/**'
+      - 'worker/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig.json'
